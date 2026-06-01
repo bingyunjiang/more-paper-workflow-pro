@@ -264,7 +264,7 @@ def make_poster(palette):
     # ===== FOOTER =====
     sec4 = sec3 + 200
     _hl(d, sec4, P["dim"])
-    _c(d, sec4 + 45, "github.com/bingyunjiang/More-paper-workflow-pro", fb, P["accent"])
+    _c(d, sec4 + 45, "github.com/bingyunjiang/More-paper-workflow-pro-skill", fb, P["accent"])
     _c(d, sec4 + 90, "MIT License  -  v1.0.0-20260601", fs, P["dim"])
     new_h = sec4 + 160
     img2 = img.crop((0, 0, W, new_h))
@@ -409,7 +409,7 @@ def make_poster_cn(palette):
     # ===== FOOTER =====
     sec4 = sec3 + 200
     _hl(d, sec4, P["dim"])
-    _c(d, sec4 + 45, "github.com/bingyunjiang/More-paper-workflow-pro", fb, P["accent"])
+    _c(d, sec4 + 45, "github.com/bingyunjiang/More-paper-workflow-pro-skill", fb, P["accent"])
     _c(d, sec4 + 90, "MIT License  -  v1.0.0-20260601", fs, P["dim"])
     new_h = sec4 + 160
     img2 = img.crop((0, 0, W, new_h))
@@ -481,7 +481,7 @@ def make_social_preview(palette):
 
     # ---- footer ----
     _hl(d, PH - 60, P["dim"])
-    _t(d, (60, PH - 42), "github.com/bingyunjiang/More-paper-workflow-pro", fs, P["accent"])
+    _t(d, (60, PH - 42), "github.com/bingyunjiang/More-paper-workflow-pro-skill", fs, P["accent"])
     _t(d, (PW - 260, PH - 42), "MIT License  -  v1.0.0-20260601", fs, P["dim"])
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
