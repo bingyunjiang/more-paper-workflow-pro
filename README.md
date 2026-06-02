@@ -11,7 +11,8 @@
 
 [**中文**](#chinese) &nbsp;|&nbsp; [**English**](#english)
 
-# 📚 More Paper Workflow Pro Skill `v1.0.1-20260602` {#chinese}
+<a id="chinese"></a>
+# 📚 More Paper Workflow Pro Skill `v1.0.1-20260602`
 
 完整学术文献检索和写作工作流（8 步法）：①交互式确定研究主题 → ②生成大纲/关键词 → ③制定检索方案 → ④多渠道检索+评分 → **⑤多轮下载（Sci-Hub→SD→IEEE）** → ⑥Zotero 文库管理（架构生成+PDF 导入） → ⑦论文写作 → ⑧论文润色。
 
@@ -533,7 +534,8 @@ MIT License
 
 ---
 
-# 📚 More Paper Workflow Pro Skill `v1.0.1-20260602` {#english}
+<a id="english"></a>
+# 📚 More Paper Workflow Pro Skill `v1.0.1-20260602`
 
 > **Author:** Dr. Jiang Bingyun　|　**WeChat:** Bingyunjiang　|　**Email:** bingyunjiang@qq.com
 
