@@ -1,16 +1,32 @@
 ---
 name: more-paper-workflow-pro-skill
-version: v1.0.2-20260603
-description: 完整学术文献检索和写作工作流（8 步法）：①交互式确定研究主题 ②生成大纲/关键词 ③制定检索方案 ④多渠道检索+评分 ⑤多轮下载（Sci-Hub→SD→IEEE） ⑥Zotero 文库管理（架构生成+PDF 导入+大纲对齐一致性调整） ⑦论文写作（4 种模式 + 中英文双边摘要 + 仿真评审质量门） ⑧论文润色（句长波动检测 + 四合一精修引擎：去 AI 痕迹 29 种模式 + 注入人味 + 章节风格指南 + before/after 对照表）
+version: v1.0.3-20260603
+description: 完整学术文献检索和写作工作流（8 步法）：①交互式确定研究主题（v2.0 增强版：阶段诊断→广度探索+预检索→深度聚焦→选题预审，借鉴 academic-mentor/nature-academic-search/deep-research/nature-reviewer 等 10 个 skill） ②生成大纲/关键词 ③制定检索方案 ④多渠道检索+评分 ⑤多轮下载（Sci-Hub→SD→IEEE） ⑥Zotero 文库管理（架构生成+PDF 导入+大纲对齐一致性调整） ⑦论文写作（4 种模式 + 中英文双边摘要 + 仿真评审质量门） ⑧论文润色（句长波动检测 + 四合一精修引擎：去 AI 痕迹 29 种模式 + 注入人味 + 章节风格指南 + before/after 对照表）
 author: Dr. Jiang Bingyun（江博士）
 wechat: Bingyunjiang
 category: research
 related_skills:
   - science-direct-cdp-pipeline: "Overlaps on CDP ScienceDirect download; this skill adds the full 8-step workflow from topic definition to paper polishing."
 triggers:
-  # Step 1: 确定研究主题
+  # Step 1: 确定研究主题（v2.0 增强版）
   - "确定研究主题"
   - "厘清研究方向"
+  # Step 1a: 研究阶段诊断
+  - "研究阶段诊断"
+  - "研究可行性评估"
+  - "研究选题评估"
+  # Step 1b: 广度探索 + 预检索
+  - "选题预检索"
+  - "研究趋势分析"
+  - "文献量扫描"
+  - "研究方向可行性"
+  # Step 1c: 深度聚焦
+  - "研究方向聚焦"
+  - "创新点预判"
+  # Step 1d: 选题预审
+  - "选题预审"
+  - "选题创新性评估"
+  - "审稿人视角评估选题"
   # Step 2: 大纲
   - "生成论文大纲"
   - "论文关键词"
@@ -75,21 +91,30 @@ triggers:
 ## 概述
 
 ```
-Step 1: 交互式确定研究主题          → 研究主题.md
+Step 1: 交互式确定研究主题（v2.0 增强版） → 研究主题.md
+  ├─ 1a 研究阶段诊断    确认用户画像 + 推荐入口
+  ├─ 1b 广度探索+预检索  发散子方向 → 文献量/趋势/gap初判
+  ├─ 1c 深度聚焦        方法论深化 + 创新点预判
+  └─ 1d 选题预审        originality/importance/feasibility 三问
 Step 2: 生成研究大纲与关键词        → 大纲关键词.md
-Step 3: 生成文献检索方案            → 检索方案.md
-Step 4: 多渠道检索+相关性筛选        → 检索文献表.md / .xlsx
+Step 3: 生成文献检索方案（T1→T2→T3路由）→ 检索方案.md
+Step 4: 多渠道检索+评分（引文验证+.bib导出） → 检索文献表.md / .xlsx / .bib
+  ├─ 4a 引文验证    DOI有效性+元数据完整性
+  ├─ 4b DOI去重     多源合并去重
+  └─ 4c .bib导出    统一BibTeX格式+评分标签
 Step 5: 多轮下载（Sci-Hub → SD）    → paper-temp/ PDFs
 Step 6: Zotero 文库管理              → zotero-架构.md + Zotero 桌面端
   ├─ 6a 生成架构    首次按大纲生成
   ├─ 6b 导入 PDF    将 PDF 拖入对应集合
   └─ 6c 一致性调整  大纲修订后重对齐文库 🌟
-Step 7: 论文写作（4 种模式可选）    → 论文初稿.md / .docx
-  ├─ full         完整写作
-  ├─ outline-only 仅大纲
-  ├─ plan         引导规划
-  └─ abstract-only 中英文摘要
-Step 7d: 同行评审仿真（质量门）      → 评审报告 + 修改建议
+Step 7: 论文写作（paper_type×language双轴）  → 论文初稿.md / .docx
+  ├─ 7a 类型+语言识别  research/en/zh/zh-to-en
+  ├─ 7b 写作模式       full/outline-only/plan/abstract-only/argument-first
+  ├─ 7c 语言差异化     zh/en/zh-to-en 写作规范+章节命名
+  ├─ 7d 章节写作规则   摘要/引言/相关工作/方法/实验/结论
+  ├─ 7e 实时引文支撑   分段→搜索→评估→导出
+  └─ 7f 中英文双边摘要
+Step 7f: 同行评审仿真（质量门）      → 评审报告 + 修改建议
 Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md
 ```
 
@@ -137,48 +162,272 @@ Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md
 ```
 ---
 
-## Step 1: 交互式确定研究主题
+## Step 1: 交互式确定研究主题（v2.0 增强版）
 
-> **开始提示：** "请告诉我你的研究方向或感兴趣的领域，我们可以通过几轮对话逐步厘清研究主题。"
+> **v1.0→v2.0 核心升级：** 旧版 Step 1 仅靠 5 轮问答让用户自述研究方向——用户不知道文献饱和度、不知道 gap 在哪里、不知道选题可行性。v2.0 借鉴 10 个学术 skill 的能力，在对话中注入外部信息（文献量/趋势/gap/创新性），让用户做有依据的决策。
 
-**方式：** 以开放式提问启动对话，与用户多轮交互，逐层聚焦研究方向。
-
-**对话引导示例：**
+### 增强架构总览
 
 ```
-助手：请告诉我你的研究方向或感兴趣的领域，我们可以通过几轮对话逐步厘清研究主题。
-用户：我在做热管理方面的研究。
-助手：好的，热管理方向很广。具体是哪种设备的热管理？
-      充电桩/储能设备？数据中心？还是电力电子器件？
-用户：充电桩和储能设备。
-助手：主要关注哪个层面？散热结构设计？温度预测与控制？还是热安全？
-...（逐层深入，直到研究方向清晰）
+Step 1a: 研究阶段诊断      → 用户画像 + 推荐入口
+Step 1b: 广度探索 + 预检索  → 发散子方向 → 文献量/趋势/gap初判
+Step 1c: 深度聚焦          → 方法论深化 + 创新点预判
+Step 1d: 选题预审          → originality/importance/feasibility 三问
+                              🟢绿灯 / 🟡黄灯 / 🔴红灯
+
+产出: 研究主题.md（增强版）
+  含用户画像 + 可行性报告 + 创新点初判 + 预审结论
 ```
 
-**关键问题清单（与用户逐轮确认）：**
+### 借鉴来源
 
-| 轮次 | 问题 | 产出 |
-|------|------|------|
-| 1 | 研究大方向是什么？（充电桩？储能？电力电子？） | 领域 |
-| 2 | 具体研究问题是什么？（散热？控制？寿命预测？） | 研究问题 |
-| 3 | 技术路线偏好？（实验？仿真？数据驱动？） | 方法论 |
-| 4 | 应用场景？（电动汽车？数据中心？电网侧？） | 场景 |
-| 5 | 时间范围？（近 3 年？近 5 年？无限制？） | 年限 |
+| 借鉴 Skill | 借什么 | 用在哪里 |
+|------------|--------|---------|
+| **academic-mentor-1.0.0** | 研究阶段诊断、人物画像、可行性评估 | Step 1a |
+| **nature-academic-search** | T1→T2→T3 多源路由检索 | Step 1b 预检索 |
+| **academic-research-hub-pro-1.0.0** | 跨数据库搜索（arXiv, Google Scholar, Semantic Scholar） | Step 1b 数据源 |
+| **scholar-search-1.0.4** | 学者/领域出版物扫描 | Step 1b |
+| **deep-research** | 主题拆解为 3-5 个研究子问题 | Step 1b 发散 |
+| **academic-deep-research-pro-1.0.0** | 双循环研究 + 3 检查点 | Step 1b/1c 结构 |
+| **literature-review-2-0.1.0** | 研究 gap 识别 | Step 1b gap 初判 |
+| **nature-reviewer** | originality/significance/readership 评估框架 | Step 1d 预审 |
+| **nature-use-prompt-craft** | 启发式提问技巧 | 全步骤对话升级 |
+| **academic-humanization-low-ai-1.0.0** | 去机械化表达 | 对话风格 |
 
-**产出文件：`研究主题.md`**
+---
+
+### Step 1a: 研究阶段诊断 ← academic-mentor
+
+> **目的：** 先了解用户是谁、处于什么阶段，再决定走哪条路。不是所有人都需要完整的 8 步流程。
+
+**诊断维度：**
+
+| 诊断项 | 选项 | 推荐入口 |
+|--------|------|---------|
+| **身份** | 硕士生 / 博士生 / 研究者 / 工程师 | — |
+| **年级** | 博一（找方向）/ 博二（开题）/ 博三+（冲刺） | — |
+| **当前阶段** | 刚入学，需要导师给方向 | → 先泛读综述，再走 Step 1-8 |
+| | 已有大致方向，需精确选题 | → 完整走 Step 1-8 |
+| | 已有具体题目，需文献支撑 | → 跳 Step 3（检索方案） |
+| | 已有大纲，需下载文献写论文 | → 跳 Step 5（下载） |
+| | 已有初稿，需润色 | → 跳 Step 8（润色） |
+| **时间压力** | 3 个月内要投稿 / 6 个月 / 无紧迫 | 影响检索年限和下载策略 |
+| **目标期刊** | 已有目标 / 不确定 / 毕业就行 | 影响写作和润色标准 |
+
+**对话示例（启发式，非问卷式）：**
+
+```
+助手：在开始之前，先了解一下你的情况——你是硕士还是博士？目前几年级？
+用户：博二，马上要开题了。
+助手：博二开题节点很关键。你现在是有大致方向需要精确到具体题目，
+      还是方向都还没定？
+用户：方向大概有——充电桩热管理，但具体做什么还没想清楚。
+助手：了解。那我们先做一轮快速文献扫描，看看近 3 年这个方向大家在做什么，
+      哪些细分点还有空间——然后再聚焦。你觉得可以吗？
+```
+
+**产出：用户画像（嵌入研究主题.md）**
 
 ```markdown
-# 研究主题
-
-- 领域：研究方向所属领域
-- 研究问题：具体研究问题
-- 方法论：采用的技术路线
-- 应用场景：应用场景描述
+## 用户画像
+- 身份：博士生（博二）
+- 阶段：开题准备，有大致方向，需精确选题
+- 时间压力：6 个月内完成初稿
+- 目标期刊：未确定
+- 推荐路径：完整走 Step 1-8
 ```
 
 ---
 
-> **下一步 → Step 2：** 基于确定的研究主题，生成论文大纲与关键词清单。回答上述 5 轮问题后，即可进入 Step 2。
+### Step 1b: 广度探索 + 预检索 ← nature-academic-search + deep-research
+
+> **目的：** 用户说出一个大致方向后，不是直接进入 5 轮问答，而是先做一次快速文献扫描——让数据说话。用户可能不知道这个方向已经发了 500 篇还是 5 篇。
+
+**流程：**
+
+```
+用户说"充电桩热管理" →
+  ① 发散 3-5 个子方向（帮用户看到更多可能）：
+      ├── 冷板式液冷散热
+      ├── 相变材料（PCM）热缓冲
+      ├── 充电枪接口发热
+      ├── 功率模块 IGBT 温升
+      └── 整柜风道优化
+  ② 逐个子方向快速预检索（Semantic Scholar / Crossref）：
+      检索近 3 年论文数，抓前 10 篇高引论文的标题
+  ③ 趋势判断：
+      500+ 篇 → ⚠️ 热门但拥挤，需要更窄的切入点
+      50-200 篇 → ✅ 适中，有足够文献又有创新空间
+      <20 篇 → ⚠️ 太新/太小众，文献支撑不足
+  ④ 输出对比表，让用户选择 1-2 个进入深度聚焦
+```
+
+**产出：选题可行性报告**
+
+```markdown
+## 选题可行性预检索
+
+| 子方向 | 近3年论文数 | 趋势 | 高引关键词 | 判断 |
+|--------|:----------:|------|-----------|:----:|
+| 冷板式液冷散热 | ~180 | 上升 | microchannel, topology optimization, minichannel | ✅ 适中 |
+| PCM 热缓冲 | ~350 | 平稳 | phase change material, thermal management, battery | ⚠️ 拥挤 |
+| 充电枪接口发热 | ~45 | 上升 | connector, contact resistance, thermal runaway | ✅ 蓝海 |
+| IGBT 功率模块温升 | ~90 | 下降 | SiC, wide bandgap, junction temperature | ⚠️ 降温中 |
+| 整柜风道优化 | ~120 | 平稳 | air cooling, fan curve, pressure drop | ✅ 适中 |
+
+> 建议优先聚焦「冷板式液冷散热」或「充电枪接口发热」——文献量适中且趋势向上。
+```
+
+**检索工具选择（参考 nature-academic-search 的 T1→T2→T3 路由）：**
+
+| 优先级 | 工具 | 适用场景 |
+|--------|------|---------|
+| T1 | Semantic Scholar API | 快速扫量（免费，无需 Key） |
+| T2 | Crossref API | DOI/元数据补全（免费） |
+| T3 | OpenAlex API | 补充检索（免费） |
+| T3 | Google Scholar | 引文追踪（需 skill 支持） |
+
+---
+
+### Step 1c: 深度聚焦 ← academic-deep-research-pro
+
+> **目的：** 用户在 Step 1b 选择 1-2 个子方向后，进入深度聚焦——不只问"做什么"，还预判"创新点在哪"。
+
+**双循环结构（借鉴 academic-deep-research-pro 的 2-cycle research）：**
+
+```
+Cycle 1: 方法论深化
+  从"仿真" → 深化为 "CFD 参数化建模 + 代理模型优化 + 实验验证"
+  从"实验" → 深化为 "正交试验设计 + 高速红外测温 + 不确定度分析"
+  → 方法越具体，后续检索方案越精准
+
+Cycle 2: 创新点预判
+  基于该方向的 gap 初判，与用户讨论可能的创新切入：
+  ├── 方法创新：新算法/新模型/新结构？
+  ├── 应用创新：已知方法用于新场景？
+  ├── 数据创新：新数据集/新实验发现？
+  └── 组合创新：A+B 方法首次联合？
+```
+
+**对话示例：**
+
+```
+助手：「冷板液冷散热」方向，从预检索看，近 3 年高频词集中在
+      microchannel 和 topology optimization。你手上有实验条件吗？
+      还是主要做仿真？
+用户：实验室有冷板测试台，可以做实验。
+助手：那很好——有实验验证的文章比纯仿真高一个档次。
+      我注意到近 3 年很少有人把「拓扑优化冷板」和「实验验证」结合起来做
+      ——这可能是一个 gap。你觉得这个切入点怎么样？
+```
+
+**产出：聚焦后的研究方向（嵌入研究主题.md）**
+
+```markdown
+## 研究方向（聚焦后）
+- 领域：充电桩热管理 → 冷板式液冷散热
+- 研究问题：冷板流道拓扑优化设计 + 实验验证
+- 方法论：CFD 参数化建模 + 代理模型（Kriging）+ 3D 打印冷板样件 + 台架实验
+- 应用场景：直流快充桩（350kW+）
+- 年限：近 5 年（2022-2026）
+- 潜在创新点：拓扑优化冷板的实验验证 gap（预检索中罕见）
+```
+
+---
+
+### Step 1d: 选题预审 ← nature-reviewer
+
+> **目的：** 在投入数周时间检索和下载之前，先用审稿人视角审视选题——如果选题本身有硬伤，后面 7 步都是白做。
+
+**三问预审框架（简化自 nature-reviewer 的五维评估）：**
+
+| 维度 | 核心问题 | 评估 |
+|------|---------|:---:|
+| **Originality** | 这个方向最近 3 年被大量发表了吗？你的切入点与已有工作的本质区别是什么？ | 🟢/🟡/🔴 |
+| **Importance** | 解决了什么实际问题？（不能是"填补空白"这种空话）谁会在乎这个结果？ | 🟢/🟡/🔴 |
+| **Feasibility** | 数据/实验条件你能获取吗？文献量是否足够？方法论是否在可控范围内？ | 🟢/🟡/🔴 |
+
+**预审结论：**
+
+| 信号 | 含义 | 建议 |
+|:----:|------|------|
+| 🟢 绿灯（3 绿） | 选题可行 | 继续 Step 2 |
+| 🟡 黄灯（1-2 红） | 有风险，需调整 | 回到 Step 1c 修正切入点，或标注为 acknowledged risk |
+| 🔴 红灯（3 红） | 选题有硬伤 | 回到 Step 1b 换方向，或重新审视研究动机 |
+
+**对话示例：**
+
+```
+助手：在正式开始检索之前，我先用审稿人的视角快速评估一下这个选题——
+
+      Originality 🟡：拓扑优化冷板本身不是新概念，但"实验验证"这层
+      确实少见——需要在论文中明确强调这一点。
+
+      Importance 🟢：350kW 快充桩的热问题是工业界真实痛点，
+      有明确的工程价值。
+
+      Feasibility 🟢：有实验台、方法论清晰、文献量适中。
+
+      总体 🟢 绿灯，可以继续。建议在写作时把「实验验证 gap」作为
+      核心 narrative，而不是只说"我们做了一个拓扑优化冷板"。
+```
+
+**产出：预审结论（嵌入研究主题.md）**
+
+```markdown
+## 选题预审
+- Originality: 🟡（需强调实验验证 gap）
+- Importance: 🟢（工业界真实痛点）
+- Feasibility: 🟢（有实验条件，文献充足）
+- 总体: 🟢 绿灯
+- 建议: 写作时以"实验验证 gap"为核心叙事线
+```
+
+---
+
+### 产出文件：`研究主题.md`（增强版）
+
+```markdown
+# 研究主题
+
+## 用户画像
+- 身份：博士生（博二）
+- 阶段：开题准备
+- 推荐路径：完整走 Step 1-8
+
+## 选题可行性预检索
+| 子方向 | 近3年论文数 | 趋势 | 判断 |
+|--------|:----------:|------|:----:|
+| ... | ... | ... | ... |
+
+## 研究方向（聚焦后）
+- 领域：...
+- 研究问题：...
+- 方法论：...
+- 应用场景：...
+- 年限：...
+- 潜在创新点：...
+
+## 选题预审
+- Originality: 🟢/🟡/🔴
+- Importance: 🟢/🟡/🔴
+- Feasibility: 🟢/🟡/🔴
+- 总体: 🟢 绿灯 / 🟡 黄灯 / 🔴 红灯
+```
+
+---
+
+### 交互原则（v2.0）
+
+1. **不机械问卷** — 避免"你的研究方向是什么？具体研究什么问题？"的机械式连问。用启发式对话帮用户发现可能。
+2. **让数据说话** — 用户不知道文献饱和度，你要帮他查。预检索结果比任何主观判断都有说服力。
+3. **先发散再聚焦** — 不要用户说一个方向就钉死。发散 3-5 个子方向，用数据帮用户选。
+4. **审稿人视角前置** — 选题阶段就用审稿人视角审视，避免写完才发现 innovation 不够。
+5. **允许跳步** — 不是所有人都需要完整 8 步。Step 1a 诊断后直接推荐最优入口。
+
+---
+
+> **下一步 → Step 2：** 选题预审通过（🟢绿灯）后，基于聚焦的研究方向，生成论文大纲与关键词清单。
 
 ## Step 2: 生成论文大纲与关键词
 
@@ -214,7 +463,7 @@ Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md
 
 > 适用场景：用户已有一份大纲草稿，需要评估其逻辑完整性、创新区分度、结构平衡性和工程可行性。**核心产出：评审报告 + 优化版大纲文档（.docx）**
 
-#### 五维度评审框架（改编自 Step 7d）
+#### 五维度评审框架（改编自 Step 7f）
 
 | 维度 | 权重 | 大纲评审的检查要点 |
 |------|------|-------------------|
@@ -277,44 +526,123 @@ Ch5 ──── ■■       (偏弱→建议充实)
 
 > **下一步 → Step 3：** 有了大纲和关键词后，制定结构化检索方案，明确检索子课题和来源。
 
-## Step 3: 生成文献检索方案
+## Step 3: 生成文献检索方案 🆕 ← nature-academic-search
+
+> **v1.0.3 增强：** 旧版的检索来源是简单的"Semantic, Crossref"平面映射。nature-academic-search 提供 T1→T2→T3 三级回退路由规则——每个子课题不是挂一个来源，而是挂一条 fallback 链。
 
 基于大纲和关键词，生成结构化检索方案。
 
-**产出文件：`检索方案.md`**
+### 检索源路由规则 ← nature-academic-search T1→T2→T3
+
+按研究领域选择合适的检索源路由：
+
+| 领域 | 首选 (T1) | 备选 (T2) | 最后手段 (T3) |
+|------|----------|----------|-------------|
+| 医学/临床 | PubMed | Semantic Scholar | Google Scholar |
+| 跨学科/工程 | CrossRef | Semantic Scholar | Scopus |
+| 预印本/CS/物理 | arXiv | bioRxiv / medRxiv | — |
+| 全面综述 | PubMed + CrossRef + arXiv | Semantic Scholar + bioRxiv/medRxiv | WoS / Scopus |
+| 需要引文量数据 | Semantic Scholar | CrossRef | — |
+| 中文文献 | — | — | CNKI / 万方（手动） |
+
+> T1 优先，无结果或结果不足时 fallback 到 T2，依然不足到 T3。每次 fallback 时记录原因。
+
+**检索源能力速查（借鉴 nature-academic-search tools.md）：**
+
+| 工具 | 覆盖范围 | API 限制 | 费用 |
+|------|---------|---------|------|
+| Semantic Scholar | 2 亿+ 论文，CS/生物医学最强 | 100 req/s（带 Key），1/s（不带） | 免费 |
+| Crossref | 1.5 亿+ 元数据记录，全学科 | 50 req/s | 免费 |
+| PubMed (NCBI) | 3700 万+ 生物医学引文 | 10 req/s（带 Key），3/s（不带） | 免费 |
+| arXiv | 250 万+ 预印本，物理/CS/数学 | 1 req/3s（无 Key） | 免费 |
+| OpenAlex | 2.5 亿+ 学术作品，全学科 | 100k/天 | 免费 |
+| Google Scholar | 全学科 | 爬虫限制 | 需 skill 支持 |
+
+### 产出文件：`检索方案.md`（增强版）
 
 ```markdown
 # 检索方案
 
+## 领域识别
+- 研究领域：[医学/工程/CS/跨学科]
+- 推荐路由：T1: [source] → T2: [source] → T3: [source]
+
 ## 检索子课题
-| 编号 | 子课题 | 关键词 | 来源 |
-|------|--------|--------|------|
-| S1 | 子课题一 | keyword1, keyword2 | Semantic, Crossref |
-| S2 | 子课题二 | keyword3, keyword4 | Semantic, Crossref |
-| S3 | 子课题三 | keyword5, keyword6 | Semantic, Crossref |
-| S4 | 子课题四 | keyword7, keyword8 | Crossref, OpenAlex |
+| 编号 | 子课题 | 关键词 | T1 | T2 | T3 |
+|------|--------|--------|----|----|-----|
+| S1 | 子课题一 | keyword1, keyword2 | Semantic Scholar | Crossref | OpenAlex |
+| S2 | 子课题二 | keyword3, keyword4 | CrossRef | PubMed | Semantic Scholar |
+| S3 | 子课题三 | keyword5, keyword6 | Semantic Scholar | Crossref | — |
+| S4 | 子课题四 | keyword7, keyword8 | arXiv | Semantic Scholar | Crossref |
 
 ## 检索执行计划
-- 每子课题检索 50 条
+- 每子课题检索 50 条（T1 优先）
+- T1 不足 30 条时自动 fallback 到 T2 补充
 - 去重后总分 ≥200 条
 - 最终筛选保留 100-150 条核心文献
+```
+
+### Pre-flight 检查（检索前）
+
+检索开始前，快速验证各 API 端点可达：
+
+```bash
+# 检查各检索源 API 是否可达
+python3 scripts/search_by_topic.py --preflight
+# 输出:
+#   ✅ Semantic Scholar — OK (200ms)
+#   ✅ Crossref — OK (350ms)
+#   ✅ OpenAlex — OK (280ms)
+#   ⚠️ PubMed — Slow (1200ms)，will use as T2 only
 ```
 
 ---
 
 > **下一步 → Step 4：** 按检索方案执行多渠道检索，对结果进行相关性评分和分级筛选。
 
-## Step 4: 多渠道检索与相关性筛选
+## Step 4: 多渠道检索与相关性筛选 🆕 ← nature-academic-search
+
+> **v1.0.3 增强：** 新增引用验证（DOI 有效性 + 元数据完整性）+ 统一 .bib 导出 + DOI 去重策略。
 
 ### 检索执行
 
-按 Step 3 方案逐一执行检索：
+按 Step 3 方案的 T1→T2→T3 路由逐子课题检索：
 
 ```bash
-# 按子课题逐条检索
-python3 scripts/search_by_topic.py "cold plate liquid cooling optimization" --limit 50 --output s1_results.txt
-python3 scripts/search_by_topic.py "spray cooling battery heat transfer" --limit 50 --output s2_results.txt
+# 按子课题逐条检索，每个子课题自动走 T1→T2→T3 fallback
+python3 scripts/search_by_topic.py "cold plate liquid cooling optimization" \
+  --t1 semantic_scholar --t2 crossref --t3 openalex \
+  --limit 50 --output s1_results.bib
+
+python3 scripts/search_by_topic.py "spray cooling battery heat transfer" \
+  --t1 crossref --t2 pubmed --t3 semantic_scholar \
+  --limit 50 --output s2_results.bib
 # ...
+```
+
+### 4a: 引文验证 🆕
+
+> 借鉴 nature-academic-search 的 citation-verification workflow。在评分之前先验证——剔除 DOI 无效、元数据残缺的条目，避免后续下载白费功夫。
+
+```
+检索结果 → 逐条验证：
+  ① DOI 格式合法性（正则 + Crossref API 校验）
+  ② 元数据完整性：title / authors / year / journal 是否在结果中存在
+  ③ 标记问题条目：
+     ⚠️ DOI 无效 → 跳过（无法下载）
+     ⚠️ 缺作者/年份 → 尝试从 Crossref 补全
+     ✅ 完整 → 进入评分
+```
+
+### 4b: DOI 去重
+
+多源检索会产生重复（同一篇论文从 Semantic Scholar 和 Crossref 各返回一次）：
+
+```
+去重策略（借鉴 nature-academic-search dedup）：
+  - 主键：DOI（大小写 + 前缀统一后比对）
+  - 无 DOI 时：title + first_author + year 组合键
+  - 冲突时保留元数据最完整的条目
 ```
 
 ### 相关性评分
@@ -339,6 +667,33 @@ python3 scripts/search_by_topic.py "spray cooling battery heat transfer" --limit
 | 📘 Tier 2 | 15-19 | 重要文献，尽量下载 |
 | 📄 Tier 3 | 10-14 | 参考文献，有选择下载 |
 | ⬜ Tier 4 | <10 | 剔除 |
+
+### 4c: 统一 .bib 导出 🆕
+
+> 借鉴 nature-academic-search 的 citation-file-mgmt workflow。所有检索结果统一导出为 .bib 格式，可直接导入 Zotero。
+
+```bash
+# 将检索文献表转换为 .bib（含评分注释）
+python3 scripts/search_by_topic.py --export-bib 检索文献表.md --output 文献库.bib
+
+# 转换格式（如需要）
+python3 scripts/search_by_topic.py --convert 文献库.bib --to ris  # → Zotero/EndNote
+python3 scripts/search_by_topic.py --convert 文献库.bib --to nbib # → PubMed
+```
+
+**.bib 文件含评分标签：**
+```bibtex
+@article{liu_topology_2025,
+  title     = {Topology Optimization of Cold Plate Flow Channels...},
+  author    = {Liu, ... and Zhang, ...},
+  journal   = {Applied Thermal Engineering},
+  year      = {2025},
+  doi       = {10.1016/j.applthermaleng.2025.127040},
+  note      = {Tier 1 | Score: 22/25 | S1: 冷板拓扑优化}
+}
+```
+
+> `note` 字段保留了 Tier 等级、评分和子课题归属，导入 Zotero 后可在 Extra 字段中查看。
 
 ---
 
@@ -1106,9 +1461,70 @@ curl -s http://127.0.0.1:9224/json/version
 | Step 5 → `paper-temp/*.pdf` | **知识库** — 所有已下载的 PDF 全文 |
 | Step 6 → `zotero-架构.md` | Zotero 集合结构（PDF 按章节分类） |
 
-### 写作模式选择
+### 7a: 论文类型与语言双轴识别 ← nature-writing
 
-进入写作前，先与用户确认目标期刊/写作需求，选择写作模式：
+> **v1.0.3 增强：** paper_type 轴（research / methods / hypothesis / algorithmic / review）决定章节骨架；language 轴（en / zh / zh-to-en）决定章节命名、引用格式和写作规范。两个轴组合出 15 种写作场景。
+
+#### 轴一：论文类型（paper_type）
+
+| paper_type | 特征 | 典型章节骨架 | 论证链 |
+|------------|------|-------------|--------|
+| **research** | 有明确的实验/仿真研究，完整展示方法+结果 | intro → related-work → method → experiments → discussion → conclusion | gap → 方法 → 结果 → 分析 → 意义 |
+| **methods** | 侧重方法/工具创新，验证相对轻量 | intro → problem-statement → design → implementation → validation → comparison | 问题 → 设计 → 实现 → 验证 → 对比 |
+| **hypothesis** | 先提假设再做实验检验 | background → hypothesis → test-design → results → implications | 背景 → 假设 → 检验 → 结果 → 推论 |
+| **algorithmic** | 算法/模型为核心贡献 | intro → preliminaries → algorithm → analysis → experiments → related-work | 基础 → 算法 → 分析 → 实验 |
+| **review** | 系统综述/调研 | intro → methodology → thematic-review → synthesis → gaps → conclusion | 方法 → 主题 → 综合 → gap → 结论 |
+
+#### 轴二：语言 / 投稿目标（language）
+
+| language | 场景 | 章节命名 | 引用格式 | 写作规范 |
+|----------|------|---------|---------|---------|
+| **en** | 直接用英文撰写，投国际期刊（Nature/IEEE/Elsevier） | Introduction, Related Work, Method, Experiments, Conclusion | IEEE / APA / Nature | Anglo-American academic prose（Step 7d 英文规则） |
+| **zh** | 用中文撰写，投中文期刊（知网/管理世界/经济研究等） | 引言/绪论、文献综述、方法、实验、结论 | GB/T 7714 | 中文学术写作规范（Step 7d 中文规则） |
+| **zh-to-en** | 用中文写草稿/笔记，最终输出英文成稿 ← nature-writing zh-to-en mode | 英文命名（Introduction 等） | IEEE / APA / Nature（按目标期刊） | 中文思维→英文表达的翻译转换规则 |
+
+#### 识别流程
+
+```
+1. 先问 paper_type（决定骨架）
+2. 再问 language（决定命名+引用+规范）
+3. 两个轴组合 → 确定完整写作方案
+
+示例组合：
+  research × en   → 英文实验研究论文（最常见）
+  research × zh   → 中文学术论文（知网投稿）
+  research × zh-to-en → 中文草稿→英文成稿（中国研究者最常用场景）
+  review × en     → 英文系统综述
+  hypothesis × zh → 中文假设驱动型论文
+```
+
+**对话示例：**
+
+```
+助手：在开始写作前，先确认两件事——
+
+      第一，你的论文是什么类型？
+      research（完整实验研究） / methods（方法创新为主） /
+      hypothesis（假设驱动） / algorithmic（算法模型） / review（综述）？
+
+用户：research，实验部分完整。
+
+助手：第二，你打算用什么语言写、投什么类型的期刊？
+      en（直接写英文，投国际期刊） /
+      zh（写中文，投国内期刊） /
+      zh-to-en（中文思路/草稿转英文成稿）？
+
+用户：zh-to-en。我手上有中文的实验笔记和思路，但最终要投 IEEE。
+
+助手：明白——research × zh-to-en。
+      骨架用英文命名（introduction → method → experiments...），
+      引用用 IEEE 格式，你的中文笔记我来帮你转成英文。
+      先从一句话核心论点开始，确认方向正确再展开。
+```
+
+### 7b: 写作模式选择
+
+在 paper_type 的基础上，选择写作模式：
 
 | 模式 | 触发场景 | 产出 |
 |------|----------|------|
@@ -1116,6 +1532,20 @@ curl -s http://127.0.0.1:9224/json/version
 | `outline-only` | 不确定结构，先生成详细大纲 | 大纲关键词.md（细化版） |
 | `plan` | 需要多轮引导交互来厘清论点 | 多轮交互 → 大纲 |
 | `abstract-only` | 已有正文，仅需写中英文摘要 | 中英文摘要 + 关键词 |
+| `argument-first` 🆕 | 先写一句话核心论点，确保方向正确再展开 ← nature-writing | 一句话论点 → 大纲确认 → 展开 |
+
+**`argument-first` 模式（借鉴 nature-writing stance.md 的 8-step workflow）：**
+
+nature-writing 强调"不要跳过 planning 阶段直接写文字"。在动手写正文之前，先用一句话写清楚核心论点：
+
+```
+> 在开始写作之前，请用一句话总结这篇论文的核心论点——
+>   "本文证明了/提出了/发现了______，与已有方法的不同在于______。"
+>
+> 这一句话将成为整篇论文的北极星，每一章都应该在回答它的某一部分。
+```
+
+只有用户确认了核心论点，才进入逐章写作。
 
 ### 知识库位置
 
@@ -1183,13 +1613,81 @@ paper-temp/  或  其他目录/
 5. 输出最终论文
 ```
 
+### 7e: 实时引文支撑 🆕 ← nature-citation
+
+> **v1.0.3 增强：** 当前的引用流程是"写完一章→手动回想哪个 PDF 能支撑→贴引用"。nature-citation 提供了"分段→解析→搜索→保守评估→导出"的七步引文工作流。将引文搜索前移到写作过程中——写完一段，实时匹配引用，不只限于已下载的 PDF。
+
+#### 引文支撑的两种模式
+
+| 模式 | 适用场景 | 引用来源 | 触发时机 |
+|------|---------|---------|---------|
+| **已下载库匹配** | 用户已有大量 PDF（Step 5 产出），从已读文献中匹配 | 仅已下载的 PDF + 检索文献表 | 每段写完后快速匹配 |
+| **扩展搜索** 🆕 | 已下载文献不够，或某条声明需要更权威/更新/更高分的支撑 | 已下载 PDF + 目标期刊范围实时搜索（Nature/CNS/目标期刊） | 用户表示"这里需要更强的引用"时 |
+
+#### 分段引用工作流（借鉴 nature-citation 的 7 步）
+
+```
+写完一段正文 →
+  ① Segment（分段）: 将段落拆为可引用的声明（claim）片段
+     例: "冷板流道拓扑优化可降低泵功" → claim 1
+         "但高流量下温均性出现拐点" → claim 2
+         "这与 Zhang (2023) 的 CFD 仿真结果一致" → claim 3（已有引用）
+  ② Parse（解析）: 每个 claim 提取关键词 + 判断是否需要新引用
+     - claim 1: 已有检索文献表中的 [liu_topology_2025] 支撑 → ✅ 已有引用
+     - claim 2: 是新发现，已下载文献中无对应支撑 → ⚠ 需要搜索
+  ③ Search（搜索）: 对需要新引用的 claim，按期刊范围搜索
+     - 默认范围：已下载文献（Step 5 产出）
+     - 扩展搜索：按 target_journal_scope 扩大范围
+  ④ Evaluate（保守评估）: 不因标题相关就推荐——必须打开摘要验证
+     每个候选文献标注 Support Level:
+       ✅ Strong: 摘要直接支撑该 claim，可引用具体数据
+       🟡 Moderate: 主题相关但需谨慎引用
+       ❌ Weak: 标题相关但摘要不支撑（不推荐）
+  ⑤ Export（导出）: 输出为 Zotero RDF / .bib / RIS 格式
+  ⑥ Report（报告）: 每段写完后简要报告引文匹配结果
+      "本段 3 个声明，2 个已有引用支撑，1 个需要新引用——
+       以下是找到的 2 篇候选文献..."
+  ⑦ 用户确认后写入引用标注
+```
+
+#### 对话示例
+
+```
+助手：这段关于"温均性拐点"的结论——检索文献表中没有直接支撑这个发现的文献。
+      我搜索了一下，找到 2 篇候选：
+
+      ① [Strong] Kim et al. (2024) "Flow uniformity limits in minichannel
+         cold plates" — 在 5 L/min 附近观察到了类似的温均性拐点
+         → 可以作为对比讨论的引用
+      ② [Moderate] Chen et al. (2023) "Temperature distribution in
+         liquid-cooled battery packs" — 主题相关但讨论的是电池包层级
+         → 可以引用但需要说明与本研究的差异
+
+      建议引用①在讨论部分，②可选。要加到参考文献列表吗？
+用户：加①，②不要了。
+助手：好的，已标注 [Kim-2024] 并加入参考文献列表。继续下一段？
+```
+
+#### 引用密度指南
+
+| 章节 | 建议引用密度 | 说明 |
+|------|:---:|------|
+| 引言 | 每 2-3 句 1 条引用 | 背景陈述和 gap 识别需要密集引用 |
+| 相关工作 | 每段 3-8 条引用 | 按主题分组引用，非每句必引 |
+| 方法 | 每段 1-2 条引用 | 仅引用直接相关的方法论文 |
+| 实验 | 每段 1-3 条引用 | baseline 方法和对比结果需要引用 |
+| 讨论 | 每段 2-4 条引用 | 与已有结论对比，需引用支撑 |
+| 结论 | 0-1 条引用 | 通常不引用新文献，引自己的贡献即可 |
+
 ### 引用与参考文献要求
+
+> 以下要求与 7e 实时引文支撑配合使用。
 
 - 正文中每处引用标注索引：`[1]`、`[2, 5]`
 - 参考文献列表包含：DOI、作者、标题、期刊/会议、年份、卷期页码
-- **每篇参考文献必须对应一个实际存在的 PDF**（存放位置根据交互沟通确定）
-- 引用内容与 PDF 原文一致（不得自行编造数据或结论）
-- 参考文献 20-40 条为宜
+- **优先引用已下载的 PDF**（防幻觉），**补充引用实时搜索的新文献**（经摘要验证后）
+- 引用内容与原文一致（不得自行编造数据或结论）
+- 参考文献 20-40 条为宜，其中至少 60% 来自 Step 5 已下载文献
 
 ### 辅助脚本
 
@@ -1211,94 +1709,217 @@ python3 scripts/batch_read_pdfs.py paper-temp/ --file-list chapter_pdfs.txt --sc
 
 该脚本使用 PyMuPDF 并行提取 PDF 文本，输出为结构化的 Markdown 文件（每篇文献一个章节，含 DOI、全文），供 LLM 快速阅读。
 
-### 论文结构模板
+### 7c: 语言差异化规则 🆕 ← nature-writing language 轴
+
+> **核心原则：** zh、en、zh-to-en 三种语言模式的写作规范有本质差异——不能把英文论文的写法直接翻译成中文来投稿，也不要把中文思维直接翻译成英文投稿。
+
+#### 7c.1 章节命名对照
+
+| 英文 (en) | 中文 (zh) | 中文场景说明 |
+|-----------|----------|-------------|
+| Abstract | 摘要 | 中文期刊通常要求中文摘要 + 英文摘要双语 |
+| Introduction | 引言 / 绪论 | 工学多用"绪论"，理学多用"引言"。博士论文用"绪论" |
+| Related Work | 文献综述 / 相关工作 | 中文期刊常将综述并入绪论（不独立成章），博士论文独立成章 |
+| Method | 方法 / 实验方案 / 系统设计 | 按学科习惯：工学→"实验方案"，理学→"方法"，计算机→"系统设计" |
+| Experiments | 实验与结果 / 结果与分析 | 中文期刊常将"结果"和"分析"拆为独立两节 |
+| Discussion | 讨论 / 分析与讨论 | 中文期刊常将 Discussion 并入 Conclusion 或与 Results 合并 |
+| Conclusion | 结论 / 结论与展望 | 必须包含"展望/不足"子节 |
+| References | 参考文献 | GB/T 7714 格式 |
+
+#### 7c.2 写作规范差异
+
+| 维度 | en（英文投稿） | zh（中文期刊） | zh-to-en（中转英） |
+|------|--------------|---------------|-------------------|
+| **人称** | 第三人称为主，方法/实验部分可用 "we" | 第一人称"本文/笔者"或第三人称"本研究"均可 | 中文草稿中的人称需在英文输出中转第三人称或 we |
+| **句长** | 15-25 words/句，自然波动 | 中文不适用，关注句子"信息密度"而非字数 | 中文长句需拆分为 2-3 句英文，每句 15-25 words |
+| **被动/主动** | 主动态优先（"We conducted..."），非"it was conducted" | 被动态常见（"实验由...完成"），不加"我们"也通顺 | 中文被动态→英文主动态 |
+| **段落结构** | 一段一个论点，首句即主题句（topic sentence） | 一段可含多论点，主题句不一定在段首 | 中文段落需重新组织为英文的"一段一论点" |
+| **文献引用密度** | 引言/相关工作部分引用密集（每 2-3 句一次引用） | 相对稀疏；中文期刊综述部分引用密度较低 | 转英文时需补充引用（可能需要追加检索） |
+| **批判性表达** | 直接指出已有工作的局限："However, [X] does not address..." | 更含蓄："[X] 的研究主要关注...，对于...讨论较少" | 中文含蓄→英文直接的批判表达 |
+| **贡献表述** | 显式列出："This paper makes the following contributions: (1)...(2)..." | 通常融入叙述中，不单独列编号清单 | 中文叙述→英文显式贡献列表 |
+
+#### 7c.3 zh-to-en 特殊规则 ← nature-writing zh-to-en mode
+
+这是中国研究者最常用的场景——手上有中文思路/笔记/数据，最终要输出英文成稿。特殊规则如下：
 
 ```
-1. 标题与摘要（中英文双语）
-   - 标题：反映核心贡献，15-20 字
-   - 中文摘要：300-500 字，背景→问题→方法→关键定量结果→意义
-   - English Abstract：150-300 words，结构与中文对齐但独立撰写，
-     非机械翻译——措辞和句式独立组织
-   - 关键词：中文 3-5 个，英文 3-5 个，与摘要一致
+1. 术语锁定：写作开始前先列出"中→英关键术语对照表"
+   - 宁可一开始多花 5 分钟对术语，不要写到一半才发现用词不一致
+   示例：
+     冷板 → cold plate
+     拓扑优化 → topology optimization
+     努塞尔数 → Nusselt number
+     泵功 → pump power (NOT pump work/pump effort)
 
-2. 引言
-   - 研究背景与动机
-   - 研究现状与 gap
-   - 主要贡献（3-5 条）
-   - 论文组织说明
+2. 中文笔记→英文翻译四步法（非机械翻译）：
+   ① 读中文草稿，提取核心论点（不是逐句翻）
+   ② 按英文论文的论证逻辑重新排序（gap→method→result→conclusion）
+   ③ 用英文撰写（不是翻译），参考中文的数据和结论
+   ④ 检查：英文版的论点顺序是否和中文版不同？（如果相同，可能是翻译腔）
 
-3. 相关工作 / 文献综述
-   - 按主题分组评述
-   - 与本文方法对比
-   - 明确本文定位
+3. 识别中文写作特有的"英文不该有"的模式：
+   - "这是...的问题，因此具有重要的理论意义和工程应用价值。" → 英文不要这种总结式句子，改为具体数据
+   - "国内外学者对此进行了大量研究。" → 英文中不要说"A lot of research has been done..."，直接说gap是什么
+   - "随着...的发展"（With the development of...）→ 英文中最泛滥的开头，避免使用
 
-4. 方法 / 系统设计
-   - 方案详细描述
-   - 架构/流程图
-   - 关键算法与设计决策
-
-5. 实验与结果
-   - 实验设置与数据集
-   - 评价指标
-   - 实验结果（图表）
-   - 分析与讨论
-
-6. 结论与展望
-   - 贡献总结
-   - 局限性
-   - 未来工作
-
-7. 参考文献
+4. 中文数字和单位的英文转换：
+   - 中文"约5kW" → "approximately 5 kW"（数字和单位间有空格）
+   - 中文"提高了30.5%" → "increased by 30.5%"
+   - 中文"降低了8.5°C" → "decreased by 8.5°C" 或 "reduced the temperature by 8.5°C"
 ```
 
-### 学术写作规范
+#### 7c.4 中文期刊特有规范 (zh)
 
-**语气与表达：**
-- 正式、客观、精确的语言
-- 第三人称叙述
-- 已建立事实用现在时，具体研究用过去时
-- 首次使用缩写时全称："物理信息神经网络（PINN）"
-- 定量描述，避免模糊用词
+```
+1. 中文标题要求：
+   - 不宜超过 20 字，不设副标题（除非绝对必要）
+   - 包含研究主题和方法关键词
+   - "...研究"、"基于...的...分析"是常见标题模式
 
-**论证逻辑：**
-- 动机 → 问题 → 方案 → 验证 的递进结构
-- 明确与已有工作的对比："与 [X] 的不同之处在于..."
-- 坦诚讨论局限性与不足
+2. 中文摘要结构：
+   - 目的/背景 → 方法 → 结果（带关键数据） → 结论
+   - 300-500 字，不分段
+   - 关键词 3-8 个，用《汉语主题词表》标准词
+
+3. 参考文献：
+   - GB/T 7714-2015 格式（见下文引用格式表）
+   - 中文文献在前、英文在后（或按引用顺序统一编号）
+   - 期刊论文：作者. 题名[J]. 刊名, 年, 卷(期): 起止页码.
+   - 学位论文：作者. 题名[D]. 城市: 学校, 年.
+```
+
+### 7d: 章节级写作规则 ← nature-writing section-specific rules
+
+> 以下规则面向 **en** 模式，**zh** 模式对应修改为中文规范（章节命名对照见 7c.1），**zh-to-en** 模式先用中文笔记走英文规则再对照 7c.3 转换。
+
+#### 摘要
+
+| 规则 | 要求 |
+|------|------|
+| 长度 | **en:** 150-250 words / **zh:** 300-500 字 |
+| 结构 | 问题 → 方法 → 关键结果（带具体数据） → 意义 |
+| 自包含 | 不依赖正文，独立可读；无引用编号；无未定义缩写 |
+| 中英文 | **en 模式：** 仅英文 / **zh 模式：** 中英双语，独立撰写非机械翻译 / **zh-to-en：** 写英文即可 |
+
+> ❌ "The experimental results demonstrate the effectiveness of the proposed method."
+> ✅ "在 5 kW 加热功率下，冷板方案将电池最高温度控制在 42.3°C，较基线降低 8.5°C。"
+
+#### 引言 / 绪论
+
+| 规则 | 要求 |
+|------|------|
+| 三层递进 | 大背景（行业/领域问题）→ 子领域现状与 gap → 本文贡献（3-5 条） |
+| 第一页即可读 | 读完引言后能回答：做了什么？为什么重要？与别人有何不同？ |
+| 贡献条目 | 3-5 条，每条不超过两行；每条标注对应章节 |
+| 结尾导航 | 简述后续各节内容 |
+
+> ❌ "With the rapid development of electric vehicles, thermal management has become increasingly important."
+> ✅ "直流快充桩在 350 kW 功率下，充电枪接口温度可在 15 分钟内升至 120°C 以上——这是制约充电速度提升的瓶颈。"
+
+#### 相关工作 / 文献综述
+
+| 规则 | 要求 |
+|------|------|
+| 按主题分组 | 按子问题/方法流派分组评述，**禁止按论文逐条罗列**（"X did A. Y did B." 是典型 AI 模式） |
+| 每组末尾对比 | 明确"本文与这些工作的不同之处在于..." |
+| 不贬低 | 指出已有工作的优劣势，不要为抬高自己贬低他人 |
+
+> ❌ "Zhang (2019) proposed X. Li (2020) used Y. Wang (2021) combined X and Z."
+> ✅ "冷板流道设计已有工作分为两类：基于经验公式的参数化优化（Zhang, 2019; Li, 2020），以及基于数值仿真的拓扑优化方法（Liu, 2022; Kim, 2023）。本文的方法在以下方面与这些工作不同..."
+
+#### 方法 / 实验方案
+
+| 规则 | 要求 |
+|------|------|
+| 先符号，后公式 | 所有符号在公式出现前先定义；公式旁有文字直觉解释 |
+| 按逻辑顺序 | 不按时间线写；按逻辑递进组织 |
+| 图表在引用后出现 | 正文第一次引用后才出现图或表 |
+| 可复现 | 提供足够参数/设置让读者能复现 |
+
+> ❌ "The loss function is L = MSE(y, y') + λ‖w‖²"
+> ✅ "损失函数由两部分组成：均方误差（MSE）衡量预测偏差，L2 正则化项 ‖w‖² 防止过拟合——"
+>    `L = MSE(y, y') + λ‖w‖²  (1)`
+
+#### 实验与结果
+
+| 规则 | 要求 |
+|------|------|
+| 以研究问题开头 | 先陈述要回答什么问题，再给数据 |
+| 图表自包含 | 图题（Figure caption）写完整：什么实验、什么条件、什么观察、什么结论 |
+| 数据→分析→解释 | 三层递进：给数据 → 分析趋势 → 解释物理/工程含义 |
+| 与 baseline 对比 | 每个实验有明确对比基线，说明选基线的理由 |
+
+> ❌ "The results are shown in Figure 3."
+> ✅ "图 3 展示了不同流量下冷板表面温度分布。当流量从 2 L/min 增至 5 L/min 时，最高温度从 52.3°C 降至 42.1°C——但继续增至 8 L/min 时温度仅再降 1.2°C，说明泵功的边际收益在 5 L/min 后急剧下降。"
+
+#### 结论
+
+| 规则 | 要求 |
+|------|------|
+| 不是摘要的复读 | 总结贡献（与引言中贡献条目一一对应），非重述全文 |
+| 诚实说局限 | 明确列出 2-3 条局限性或未解决问题 |
+| 具体未来方向 | 不说"未来将探索更多应用"——说具体的下一步计划 |
+
+> ❌ "In conclusion, this paper presents a novel approach. Future work will explore more applications."
+> ✅ "本文提出了一种冷板流道拓扑优化方法，在 5 kW 加热功率下将电池温升降低 8.5°C。两个局限：① 高环境温度（>45°C）下泵功消耗增加 30%；② 温均性拐点的物理机制尚不清楚。后续将建立流固耦合多尺度模型以揭示这一现象。"
+
+### 论文结构模板（通用回退）
+
+当用户跳过 paper_type 选择或需要快速启动时：
+
+```
+en 模式：
+1. Title & Abstract
+2. Introduction (3-layer: background → gap → contributions)
+3. Related Work (thematic grouping, no laundry list)
+4. Method (symbols before equations, intuition alongside)
+5. Experiments (start with research question, self-contained figures)
+6. Conclusion (contributions + limitations + specific future work)
+7. References
+
+zh 模式：
+1. 摘要（中英双语，独立撰写）
+2. 绪论/引言（三层递进 → 贡献 3-5 条）
+3. 文献综述（按主题分组）
+4. 方法/实验方案（先符号后公式）
+5. 实验与结果/结果与分析
+6. 结论与展望（贡献 + 局限 + 未来方向）
+7. 参考文献（GB/T 7714 格式）
+```
 
 ### 引用格式
 
-| 格式 | 适用场景 | 示例 |
-|------|----------|------|
-| 编号引用 | IEEE 会议/期刊 | "...研究[1, 2]表明..." |
-| 作者-年份 | Elsevier / Springer | "...研究 (Zhang, 2023) 表明..." |
-| 脚注引用 | 某些期刊 | "...研究表明¹" |
+| language | 格式 | 适用场景 | 示例 |
+|----------|------|----------|------|
+| **en** | 编号引用 [1] | IEEE 会议/期刊 | "...research [1, 2] shows..." |
+| **en** | 作者-年份 (Author, Year) | Elsevier / Springer | "...research (Zhang, 2023) shows..." |
+| **zh** | 顺序编码制 [1] | 多数中文理工科期刊 | "...研究[1, 2]表明..." |
+| **zh** | 著者-出版年 (作者, 年) | 部分中文社科期刊 | "...（张三, 2023）指出..." |
+| **zh-to-en** | 按目标期刊选择 | IEEE / APA / Nature | 基于 7a 确定的投稿目标 |
 
-### 格式说明
-
-**IEEE 格式：**
-- 双栏排版，Times New Roman
-- 标题 24pt 粗体，正文 10pt
-- 章节编号：1. → 1.1 → 1.1.1
-
-**Elsevier 格式：**
-- 单栏/双栏可选
-- 通常使用模板文件
-- 参考文献按作者姓名排序
-
-**通用规范：**
-- 图表有编号和标题（图下图题，表上表题）
-- 公式用编号引用
-- 参考文献 15-30 条为宜，涵盖近 5 年核心文献
+**GB/T 7714-2015 常见条目格式 (zh)：**
+```
+期刊论文：  作者. 题名[J]. 刊名, 年, 卷(期): 起止页码.
+学位论文：  作者. 题名[D]. 城市: 学校, 年.
+会议论文：  作者. 题名[C]// 会议录名. 出版地: 出版者, 年: 起止页码.
+专著：      作者. 书名[M]. 版本. 出版地: 出版者, 年.
+电子文献：  作者. 题名[EB/OL]. (发布日期)[引用日期]. URL.
+```
 
 ### 产出文件
 
-- `论文初稿.md` — 含完整结构和参考文献的初稿
+- `论文初稿.md` — 含完整结构和参考文献的初稿，标注 paper_type + language + 引用格式
+- **zh-to-en 模式额外产出：** `中→英术语对照表.md`
 
 ---
 
-### 7d. 同行评审仿真（质量门）
+### 7f. 同行评审仿真（质量门）🆕 ← nature-response
 
-初稿完成后，在进入润色前增加一轮仿真同行评审，从 5 个维度评估初稿质量：
+> **v1.0.3 增强：** 保留原有的五维量化评分框架（0-10 分 + 权重），补充 rebuttal letter 预演——投稿前逐条预演审稿回复，暴露"以为能说服审稿人、实际说服不了"的薄弱环节。
+
+#### 7f.1 五维度评审框架
+
+初稿完成后，从 5 个维度量化评估初稿质量：
 
 | 维度 | 权重 | 检查要点 |
 |------|------|----------|
@@ -1308,18 +1929,114 @@ python3 scripts/batch_read_pdfs.py paper-temp/ --file-list chapter_pdfs.txt --sc
 | 论证连贯性（Coherence） | 15% | 逻辑链是否完整？gap → 方法 → 结果 → 结论是否自洽？ |
 | 写作质量（Writing） | 15% | 表达是否清晰？术语是否统一？有无明显 AI 痕迹？ |
 
-**流程：**
+> 注：五维度框架已被 Step 2b 大纲评审复用——两处使用同一套评分体系，保持一致性。
+
+#### 7f.2 三审稿人视角 🆕 ← nature-reviewer
+
+> **与五维评分的关系：** 五维评分告诉你"哪里弱"（量化），三审稿人告诉你"审稿人会怎么描述这个问题"（叙事）。两者互补——评分定位问题维度，审稿人报告模拟真实审稿场景。
+
+在五维评分完成后，从三个不同的审稿人视角重新审视论文：
+
+| 审稿人 | 侧重维度 | 核心问题 |
+|--------|---------|---------|
+| **Reviewer A** | 方法严谨性（对应 Rigor 维度） | 实验/仿真设置是否合理？控制变量是否明确？是否可复现？ |
+| **Reviewer B** | 创新性与意义（对应 Originality 维度） | 贡献是否清晰区别于已有工作？谁会读这篇论文？ |
+| **Reviewer C** | 清晰度与完整性（对应 Coherence + Writing 维度） | 论证链是否完整？非本领域读者能看懂吗？图表是否自包含？ |
+
+**每份审稿人报告格式：**
+
+```
+Reviewer [A/B/C]
+
+## Overall Assessment
+[一段话总体评价——与五维评分对应维度的分数呼应]
+
+## Major Concerns（必须修改）
+1. [具体问题，标注到章节/段落]
+2. ...
+
+## Minor Concerns（建议修改）
+1. [具体问题，标注到章节/段落]
+2. ...
+
+## Questions to Authors
+1. [审稿人不理解/需要澄清的问题]
+2. ...
+```
+
+**边界规则（遵循 nature-reviewer 的 default stance）：**
+- 三位审稿人仅侧重点不同——不编造审稿人身份、专业、机构或履历
+- 不声称编辑的最终决定或对特定期刊的适合性
+- 区分三类判断：有支撑 / 薄弱 / 无法从现有材料中评估
+- 如果提供的材料不完整（仅某章/节），标注评估边界
+
+#### 7f.3 评审流程
+
 1. 每维度给出 0-10 评分 + 具体问题定位（标注到章节/段落）
 2. 针对评分 < 6 的维度提供修改建议
 3. **限 2 轮修改**——第 1 轮根据评审意见修改，第 2 轮验证
 4. 第 2 轮后仍未解决的问题 → 标注为"Acknowledged Limitations"
 5. 评分低于 5 的维度 → 建议回到 Step 1-6 对应环节补足
 
-> 评审完成后进入 Step 8 润色。如需先解决评审指出的重大问题，在 Step 7 内迭代后再推进。
+#### 7f.4 Rebuttal Letter 预演 🆕 ← nature-response
+
+> **核心思路：** 不等真实投稿被审稿人指出问题，在质量门阶段就预演 rebuttal——暴露论文中"你以为能说服审稿人、实际上说服不了"的薄弱环节。
+
+**预演流程：**
+
+```
+1. 基于五维评分中 < 6 的问题 + 三审稿人报告中的 Major Concerns，
+   逐条生成 rebuttal 草稿：
+   ┌──────────────────────────────────────────────────────┐
+   │ 问题: 样本量 n=3 不足以支持结论 (Evidence 维度, 5/10)  │
+   │                                                        │
+   │ Response:                                              │
+   │   We agree that n=3 is limited. However, each sample   │
+   │   was tested under 5 independent thermal cycles with   │
+   │   <2% variance between cycles per sample, suggesting   │
+   │   high within-sample consistency. We have added a note │
+   │   on sample-size limitations to Section 5.2.            │
+   │                                                        │
+   │   [self-check: Does this response actually address the │
+   │    concern? → Partially. The n IS small.               │
+   │    → 建议在修改中补充 n=5 的额外实验]                   │
+   └──────────────────────────────────────────────────────┘
+
+2. Self-check 是核心价值——
+   如果预演时发现"这个回复说服不了人"，就回到论文补充修改
+
+3. 遵守 nature-response 的红线：
+   - 不含对抗性语言（"The reviewer is wrong"）
+   - 不承诺未做的工作（"We will do X" → 改为"We have added X"）
+   - 每条回复都标注在文稿中做了哪些具体修改
+```
+
+**对话示例：**
+
+```
+助手：Evidence 维度（5/10）——样本量 n=3 是主要扣分项。预演一下 rebuttal：
+      "...We acknowledge the limited n=3. However, each sample underwent
+      5 independent cycles with <2% intra-sample variance, suggesting
+      the observed trends are robust within the tested range."
+
+      Self-check: "intra-sample variance low" 能说服审稿人吗？
+      → 不太能。审稿人会说你仍然只测试了 3 个独立样本。
+      → 建议：在修改阶段补做 n=5 的实验（如果能），否则在 Limitations
+        中明确标注这是论文的主要局限。
+用户：n=5 来不及了... 先标 Limitations 吧。
+助手：好，那这条 rebuttal 就如实写"n=3 is a limitation we acknowledge"，
+      不走"intra-sample variance" 的辩护路线——后者会被审稿人看穿。
+```
+
+#### 产出文件
+
+- `评审报告.md` — 五维评分表 + 逐维度问题定位 + 修改优先级
+- `rebuttal-预演.md` 🆕 — 逐条问题 → response 草稿 + self-check 结论
+- 修改后的 `论文初稿.md`（第 2 轮后）
 
 ---
 
-> **下一步 → Step 8：** 同行评审通过后，进入精炼润色、去 AI 痕迹，提升至可投稿水平。
+> **下一步 → Step 8：** 同行评审通过 + rebuttal 预演无遗漏后，进入精炼润色、去 AI 痕迹，提升至可投稿水平。
 
 ## Step 8: 论文润色
 

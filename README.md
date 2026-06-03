@@ -237,6 +237,12 @@ python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
 与 AI 交互对话，厘清研究方向：
 
 ```
+💬 采用 More Paper Workflow Pro Skill，我们开始确定研究选题。
+```
+
+或更直接地：
+
+```
 > 我正在研究某个方向，请帮我厘清研究方向。
 ```
 
@@ -254,9 +260,17 @@ python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
 
 基于研究主题生成章节结构和关键词清单。
 
+```
+💬 基于确定的研究主题，生成论文大纲和关键词清单。
+```
+
 **产出：** `大纲关键词.md`
 
 ### Step 3: 生成检索方案
+
+```
+💬 根据大纲和关键词，制定结构化文献检索方案。
+```
 
 ```markdown
 # 检索方案
@@ -271,6 +285,10 @@ python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
 
 ### Step 4: 检索与评分
 
+```
+💬 按检索方案执行多渠道文献检索，并进行相关性评分和分级。
+```
+
 ```bash
 # 按子课题检索
 python3 scripts/search_by_topic.py "cold plate liquid cooling optimization" --limit 50 --output s1.txt
@@ -282,6 +300,10 @@ python3 scripts/search_by_topic.py "cold plate liquid cooling optimization" --li
 **产出：** `检索文献表.md`
 
 ### Step 5: 多轮下载
+
+```
+💬 开始批量下载论文 PDF，按出版商自动路由（Sci-Hub → ScienceDirect → IEEE）。
+```
 
 #### 第 1 轮：Sci-Hub（免登录，老论文更有效）
 
@@ -378,6 +400,10 @@ python3 scripts/download_via_ieee.py --check-session --port 9223
 
 ### Step 6: Zotero 文库管理
 
+```
+💬 把下载的 PDF 导入 Zotero 文库，按大纲生成集合架构。
+```
+
 #### 6a: 生成 Zotero 架构
 
 ```bash
@@ -397,6 +423,10 @@ python3 scripts/organize_zotero.py 大纲关键词.md --output zotero-架构.md
 > **为什么不用 Zotero 云端上传？** Zotero 免费版仅有 300MB 文件存储，批量下载的 PDF 总量可达 1.4GB+，远超免费额度。拖拽导入的 PDF 仅保存在本地，元数据同步到云端（几乎不占空间），不影响多设备同步。同时免去了申请和配置 API Key 的步骤，降低使用门槛。
 
 ### Step 7: 论文写作
+
+```
+💬 基于 Zotero 文库中的文献，开始撰写论文。
+```
 
 **写作模式选择（4 种）：** 进入写作前选择模式：
 
@@ -439,6 +469,10 @@ python3 scripts/batch_read_pdfs.py paper-temp/ --output 文献库全文.md
 - 产出：`评审报告.md` + 修改建议
 
 ### Step 8: 论文润色
+
+```
+💬 对论文初稿进行润色，去 AI 痕迹、注入人味、优化句长波动。
+```
 
 逐句精修，分层递进。核心增强 —— **句长波动与段落节奏检测（5 项）：**
 
@@ -900,6 +934,12 @@ python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
 Interact with AI to clarify research direction:
 
 ```
+💬 Using More Paper Workflow Pro Skill, let's define our research topic.
+```
+
+Or more directly:
+
+```
 > I'm researching a certain direction. Please help me clarify the research focus.
 ```
 
@@ -917,9 +957,17 @@ Interact with AI to clarify research direction:
 
 Generate chapter structure and keyword lists based on the research topic.
 
+```
+💬 Based on the confirmed research topic, generate a paper outline and keyword list.
+```
+
 **Output:** `outline-keywords.md`
 
 ### Step 3: Design Search Strategy
+
+```
+💬 Based on the outline and keywords, design a structured literature search strategy.
+```
 
 ```markdown
 # Search Strategy
@@ -934,6 +982,10 @@ Generate chapter structure and keyword lists based on the research topic.
 
 ### Step 4: Search & Score
 
+```
+💬 Execute the multi-source literature search and perform relevance scoring and grading.
+```
+
 ```bash
 # Search by sub-topic
 python3 scripts/search_by_topic.py "cold plate liquid cooling" --limit 50 --output s1.txt
@@ -945,6 +997,10 @@ python3 scripts/search_by_topic.py "cold plate liquid cooling" --limit 50 --outp
 **Output:** `literature-table.md`
 
 ### Step 5: Multi-Round Download
+
+```
+💬 Start batch downloading paper PDFs, auto-routing by publisher (Sci-Hub → ScienceDirect → IEEE).
+```
 
 #### Round 1: Sci-Hub (No Login, Better for Older Papers)
 
@@ -1040,6 +1096,10 @@ python3 scripts/download_via_ieee.py --check-session --port 9223
 See `references/publisher-access-matrix.md` for CDP approach details and publisher-specific guidance.
 
 ### Step 6: Zotero Library Management
+
+```
+💬 Import the downloaded PDFs into Zotero and generate a collection architecture based on the outline.
+```
 
 #### 6a: Generate Zotero Architecture
 
