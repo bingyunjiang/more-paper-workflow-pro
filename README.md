@@ -181,6 +181,53 @@ pip install websocket-client
 python3 scripts/auto_sd_downloader.py --browser-path "/custom/path/chrome"
 ```
 
+### Zotero MCP 配置（可选，Step 6-7 对话操作用）
+
+Zotero MCP 让你通过对话直接操作 Zotero 文库——按 DOI 导入论文、搜索、读取 PDF 全文等。**如果不配置，仍可通过拖拽方式手动导入 PDF（推荐方式）。**
+
+```bash
+# 1. 检测环境
+python3 scripts/setup_zotero.py
+
+# 2. 一键安装+配置（自动检测 Claude Code / Hermes / Cursor）
+python3 scripts/setup_zotero.py --install --target auto
+
+# 3. 或显式指定目标环境
+python3 scripts/setup_zotero.py --install --target claude-code
+
+# 4. 烟雾测试验证
+python3 scripts/setup_zotero.py --smoke-test
+```
+
+**支持的 Agent 环境：**
+
+| 环境 | `--target` | 配置文件 |
+|------|-----------|----------|
+| **Claude Code** | `claude-code` | `~/.claude/mcp.json` |
+| Hermes/OpenClaw | `hermes` | `~/.hermes/config.yaml` |
+| Claude Desktop | `claude-desktop` | `claude_desktop_config.json` |
+| Cursor | `cursor` | `~/.cursor/mcp.json` |
+| 自动检测 | `auto` | 自动选择 |
+
+**连接模式：**
+- **Web API 模式**：远程连接 zotero.org，支持完整读写操作（需要 [API Key](https://www.zotero.org/settings/keys)）
+- **本地 API 模式**：直连 Zotero 桌面端（`localhost:23119`），无需 API Key，但仅支持读取
+
+**非交互式安装（CI/CD 或脚本）：**
+```bash
+# Web API 模式
+ZOTERO_API_KEY="your_key" ZOTERO_USER_ID="1234567" \
+python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
+
+# 本地 API 模式
+ZOTERO_LOCAL=true \
+python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
+```
+
+> 📖 详细配置指南：[`docs/ZOTERO_MCP_SETUP.md`](docs/ZOTERO_MCP_SETUP.md)
+>
+> 📖 离线安装说明：[`scripts/packages/README.md`](scripts/packages/README.md)
+
 ---
 
 ## 📖 使用指南
@@ -343,7 +390,7 @@ python3 scripts/organize_zotero.py 大纲关键词.md --output zotero-架构.md
 在 Zotero 桌面端拖拽 PDF 到对应集合，Zotero 自动识别元数据。
 
 **方式二：Zotero MCP 对话操作**
-通过 `zotero_add_by_doi` 等工具直接按 DOI 导入（Hermes / OpenClaw / Claude Code 内置）。
+通过 `zotero_add_by_doi` 等工具直接按 DOI 导入（需先完成 [Zotero MCP 配置](#zotero-mcp-配置可选step-6-7-对话操作用)）。
 
 运行 `python3 scripts/setup_zotero.py` 检测环境。
 

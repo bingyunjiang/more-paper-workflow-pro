@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Read(//Users/Bing/Downloads/欧阳博士/**)"
+      "Read(//Users/Bing/Downloads/欧阳博士/**)",
+      "Bash(/Library/Frameworks/Python.framework/Versions/3.14/bin/zotero-mcp setup-info *)",
+      "Bash(python3 -m py_compile scripts/setup_zotero.py)",
+      "Bash(python3 scripts/setup_zotero.py --smoke-test)",
+      "Bash(python3 scripts/setup_zotero.py --check)",
+      "Bash(python3 scripts/setup_zotero.py)"
+    ],
+    "additionalDirectories": [
+      "/Users/Bing/Downloads/欧阳博士"
     ]
   }
 }

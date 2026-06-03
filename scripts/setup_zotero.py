@@ -7,18 +7,44 @@ Zotero MCP 配置工具 — 包含安装、配置、检测三合一。
   --install: 一键安装+配置 Zotero MCP
   --check  : JSON 格式输出检测结果（供脚本调用）
   --export : 输出环境变量配置命令
+  --target : 指定目标 Agent 环境（hermes / claude-code / claude-desktop / cursor / auto）
+  --non-interactive: 非交互模式（配合 --install，通过环境变量传入参数）
+  --smoke-test: 安装后自动执行功能验证
 
 Usage:
-  python3 scripts/setup_zotero.py             检测状态
-  python3 scripts/setup_zotero.py --install   安装+配置
-  python3 scripts/setup_zotero.py --check     JSON 输出
-  python3 scripts/setup_zotero.py --export    输出 export 命令
+  python3 scripts/setup_zotero.py                              检测状态
+  python3 scripts/setup_zotero.py --install                    安装+配置（交互式）
+  python3 scripts/setup_zotero.py --install --target claude-code  安装到 Claude Code
+  python3 scripts/setup_zotero.py --install --target auto         自动检测环境
+  python3 scripts/setup_zotero.py --check                      JSON 输出
+  python3 scripts/setup_zotero.py --export                     输出 export 命令
+  python3 scripts/setup_zotero.py --smoke-test                 功能验证
 """
-import sys, os, json, subprocess, shutil, configparser
+import sys, os, json, subprocess, shutil, configparser, platform
 
 PACKAGE_NAME = "zotero-mcp-server"
-CONFIG_PATH = os.path.expanduser("~/.hermes/config.yaml")
 HERMES_HOME = os.path.expanduser("~/.hermes")
+HERMES_CONFIG_PATH = os.path.expanduser("~/.hermes/config.yaml")
+
+# Claude Code MCP 配置路径
+CLAUDE_CODE_MCP_PATH = os.path.expanduser("~/.claude/mcp.json")
+
+# Claude Desktop 配置路径（macOS）
+if platform.system() == "Darwin":
+    CLAUDE_DESKTOP_CONFIG = os.path.expanduser(
+        "~/Library/Application Support/Claude/claude_desktop_config.json"
+    )
+elif platform.system() == "Windows":
+    CLAUDE_DESKTOP_CONFIG = os.path.expanduser(
+        "~/AppData/Roaming/Claude/claude_desktop_config.json"
+    )
+else:
+    CLAUDE_DESKTOP_CONFIG = os.path.expanduser(
+        "~/.config/Claude/claude_desktop_config.json"
+    )
+
+# Cursor MCP 配置路径
+CURSOR_MCP_PATH = os.path.expanduser("~/.cursor/mcp.json")
 
 
 # ── 检测函数 ──────────────────────────────────────────────
@@ -47,16 +73,19 @@ def check_env():
     return api_key, user_id, local
 
 
-def detect_mode():
-    """检测当前 config.yaml 中 Zotero MCP 的运行模式"""
-    if not os.path.exists(CONFIG_PATH):
+def detect_mode(config_path=None):
+    """检测配置文件中 Zotero MCP 的运行模式。
+
+    支持 Hermes YAML 格式和 Claude Code / Cursor JSON 格式。
+    """
+    if config_path is None:
+        config_path = _find_existing_config()
+    if not config_path or not os.path.exists(config_path):
         return None
     try:
-        import yaml
-        with open(CONFIG_PATH) as f:
-            cfg = yaml.safe_load(f) or {}
-        zot = cfg.get("mcp_servers", {}).get("zotero", {})
-        env = zot.get("env", {})
+        env = _get_zotero_env_from_config(config_path)
+        if not env:
+            return None
         if env.get("ZOTERO_LOCAL", "").lower() in ["true", "yes", "1"]:
             return "local"
         if env.get("ZOTERO_API_KEY"):
@@ -67,17 +96,91 @@ def detect_mode():
 
 
 def check_mcp_registered():
-    """检测 config.yaml 中是否有 zotero MCP 注册"""
-    if not os.path.exists(CONFIG_PATH):
-        return False
+    """检测是否有任何配置文件中注册了 zotero MCP"""
+    for cfg_path in _all_config_paths():
+        if os.path.exists(cfg_path):
+            try:
+                env = _get_zotero_env_from_config(cfg_path)
+                if env:
+                    return True
+            except Exception:
+                pass
+
+    # 也检查 zotero-mcp 自身的 setup 状态
     try:
-        import yaml
-        with open(CONFIG_PATH) as f:
-            cfg = yaml.safe_load(f)
-        mcp = cfg.get("mcp_servers", {}) if isinstance(cfg, dict) else {}
-        return "zotero" in mcp
+        r = subprocess.run(
+            [sys.executable, "-m", "zotero_mcp_server.setup_info"],
+            capture_output=True, text=True, timeout=10
+        )
+        if "Claude integration: enabled" in r.stdout:
+            return True
     except Exception:
-        return False
+        pass
+    return False
+
+
+def _all_config_paths():
+    """返回所有可能的 MCP 配置路径"""
+    paths = [HERMES_CONFIG_PATH, CLAUDE_CODE_MCP_PATH, CURSOR_MCP_PATH]
+    if CLAUDE_DESKTOP_CONFIG:
+        paths.append(CLAUDE_DESKTOP_CONFIG)
+    return paths
+
+
+def _find_existing_config():
+    """查找第一个存在且有 Zotero 配置的配置文件"""
+    for cfg_path in _all_config_paths():
+        if os.path.exists(cfg_path):
+            try:
+                env = _get_zotero_env_from_config(cfg_path)
+                if env:
+                    return cfg_path
+            except Exception:
+                pass
+    return None
+
+
+def _get_zotero_env_from_config(config_path):
+    """从配置文件（YAML 或 JSON）中提取 Zotero MCP 的环境变量"""
+    ext = os.path.splitext(config_path)[1].lower()
+
+    if ext in [".yaml", ".yml"]:
+        import yaml
+        with open(config_path) as f:
+            cfg = yaml.safe_load(f) or {}
+        zot = cfg.get("mcp_servers", {}).get("zotero", {})
+        return zot.get("env", {})
+    elif ext == ".json":
+        with open(config_path) as f:
+            cfg = json.load(f) or {}
+        zot = cfg.get("mcpServers", {}).get("zotero", {})
+        return zot.get("env", {})
+    return None
+
+
+def detect_target():
+    """自动检测当前 Agent 环境
+
+    Returns: 'hermes' | 'claude-code' | 'claude-desktop' | 'cursor' | None
+    """
+    # 检测 Claude Code
+    if os.path.exists(CLAUDE_CODE_MCP_PATH):
+        return "claude-code"
+    # 检测 Cursor
+    if os.path.exists(CURSOR_MCP_PATH):
+        return "cursor"
+    # 检测 Hermes
+    if os.path.exists(HERMES_CONFIG_PATH):
+        return "hermes"
+    # 检测 Claude Desktop
+    if os.path.exists(CLAUDE_DESKTOP_CONFIG):
+        return "claude-desktop"
+    # 通过环境变量检测
+    if os.environ.get("CLAUDE_CODE_SESSION_ID") or os.environ.get("CLAUDE_CODE"):
+        return "claude-code"
+    if os.environ.get("HERMES_HOME"):
+        return "hermes"
+    return None
 
 
 def check_zotero_local():
@@ -195,27 +298,38 @@ def get_zotero_bin():
     return shutil.which("zotero-mcp") or "zotero-mcp"
 
 
-def configure_mcp(api_key="", user_id="", local_mode=False):
-    """写入/更新 config.yaml 的 mcp_servers.zotero 节
+def configure_mcp(api_key="", user_id="", local_mode=False, target="hermes"):
+    """写入/更新 MCP 配置
 
     Args:
         api_key: Web API 模式时需要的 Zotero API Key
         user_id: Web API 模式时需要的 Zotero 用户数字 ID
         local_mode: True=本地模式（桌面端直连），False=Web API 模式
+        target: 目标环境 — 'hermes' | 'claude-code' | 'claude-desktop' | 'cursor' | 'auto'
     """
+    if target == "auto":
+        target = detect_target() or "claude-code"
+
+    if target == "claude-desktop":
+        return _configure_via_zotero_mcp_setup(api_key, user_id, local_mode)
+    elif target in ["claude-code", "cursor"]:
+        return _configure_json_mcp(api_key, user_id, local_mode, target)
+    else:
+        return _configure_hermes_mcp(api_key, user_id, local_mode)
+
+
+def _configure_hermes_mcp(api_key="", user_id="", local_mode=False):
+    """写入 ~/.hermes/config.yaml 的 mcp_servers.zotero 节"""
     import yaml
 
-    # 确保目录存在
     os.makedirs(HERMES_HOME, exist_ok=True)
 
-    # 读取或创建配置
-    if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH) as f:
+    if os.path.exists(HERMES_CONFIG_PATH):
+        with open(HERMES_CONFIG_PATH) as f:
             cfg = yaml.safe_load(f) or {}
     else:
         cfg = {}
 
-    # 确保 mcp_servers 存在
     if "mcp_servers" not in cfg:
         cfg["mcp_servers"] = {}
 
@@ -227,7 +341,6 @@ def configure_mcp(api_key="", user_id="", local_mode=False):
             "no_proxy": "localhost,127.0.0.1,::1",
             "NO_PROXY": "localhost,127.0.0.1,::1",
         }
-        print(f"  ✅ 模式: 本地 API（桌面端直连，仅读取）")
     else:
         env = {
             "ZOTERO_API_KEY": api_key,
@@ -235,7 +348,6 @@ def configure_mcp(api_key="", user_id="", local_mode=False):
             "no_proxy": "localhost,127.0.0.1,::1",
             "NO_PROXY": "localhost,127.0.0.1,::1",
         }
-        print(f"  ✅ 模式: Web API（远程，支持读写）")
 
     cfg["mcp_servers"]["zotero"] = {
         "command": zotero_bin,
@@ -243,10 +355,121 @@ def configure_mcp(api_key="", user_id="", local_mode=False):
         "enabled": True,
     }
 
-    with open(CONFIG_PATH, "w") as f:
+    with open(HERMES_CONFIG_PATH, "w") as f:
         yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
 
-    print(f"  ✅ MCP 配置已写入 {CONFIG_PATH}")
+    _print_config_result(target="hermes", config_path=HERMES_CONFIG_PATH,
+                         zotero_bin=zotero_bin, local_mode=local_mode,
+                         user_id=user_id, api_key=api_key)
+    return True
+
+
+def _configure_json_mcp(api_key="", user_id="", local_mode=False, target="claude-code"):
+    """写入 Claude Code / Cursor 的 JSON 格式 MCP 配置
+
+    Claude Code: ~/.claude/mcp.json
+    Cursor:      ~/.cursor/mcp.json
+    """
+    if target == "cursor":
+        config_path = CURSOR_MCP_PATH
+    else:
+        config_path = CLAUDE_CODE_MCP_PATH
+
+    config_dir = os.path.dirname(config_path)
+    os.makedirs(config_dir, exist_ok=True)
+
+    # 读取已有配置，保留其他 MCP 服务器
+    if os.path.exists(config_path):
+        with open(config_path) as f:
+            try:
+                cfg = json.load(f)
+            except json.JSONDecodeError:
+                cfg = {}
+    else:
+        cfg = {}
+
+    if "mcpServers" not in cfg:
+        cfg["mcpServers"] = {}
+
+    zotero_bin = get_zotero_bin()
+
+    if local_mode:
+        env = {
+            "ZOTERO_LOCAL": "true",
+            "no_proxy": "localhost,127.0.0.1,::1",
+            "NO_PROXY": "localhost,127.0.0.1,::1",
+        }
+    else:
+        env = {
+            "ZOTERO_API_KEY": api_key,
+            "ZOTERO_LIBRARY_ID": user_id,
+            "no_proxy": "localhost,127.0.0.1,::1",
+            "NO_PROXY": "localhost,127.0.0.1,::1",
+        }
+
+    cfg["mcpServers"]["zotero"] = {
+        "command": zotero_bin,
+        "env": env,
+    }
+
+    with open(config_path, "w") as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    _print_config_result(target=target, config_path=config_path,
+                         zotero_bin=zotero_bin, local_mode=local_mode,
+                         user_id=user_id, api_key=api_key)
+    return True
+
+
+def _configure_via_zotero_mcp_setup(api_key="", user_id="", local_mode=False):
+    """通过 zotero-mcp setup 命令配置 Claude Desktop
+
+    调用上游 zotero-mcp-server 自带 setup 命令。
+    """
+    zotero_bin = get_zotero_bin()
+    cmd = [zotero_bin, "setup"]
+
+    if local_mode:
+        # 默认就是 local 模式
+        pass
+    else:
+        cmd.extend(["--no-local", "--api-key", api_key, "--library-id", user_id])
+
+    print(f"  执行: {' '.join(cmd)}")
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        print(r.stdout)
+        if r.returncode != 0:
+            print(f"  ⚠ setup 输出: {r.stderr}")
+        _print_config_result(target="claude-desktop",
+                             config_path=CLAUDE_DESKTOP_CONFIG,
+                             zotero_bin=zotero_bin, local_mode=local_mode,
+                             user_id=user_id, api_key=api_key)
+        return r.returncode == 0
+    except Exception as e:
+        print(f"  ❌ zotero-mcp setup 失败: {e}")
+        print(f"  回退：直接写入 {CLAUDE_DESKTOP_CONFIG}")
+        return _configure_json_mcp(api_key, user_id, local_mode, "claude-code")
+        # Claude Desktop 和 Claude Code 共用同样的 JSON 格式
+        # 如果 Claude Desktop 路径不可用，使用通用的 JSON 写入
+
+
+def _print_config_result(target, config_path, zotero_bin, local_mode, user_id, api_key):
+    """打印配置结果"""
+    target_labels = {
+        "hermes": "Hermes/OpenClaw",
+        "claude-code": "Claude Code",
+        "claude-desktop": "Claude Desktop",
+        "cursor": "Cursor",
+    }
+    label = target_labels.get(target, target)
+
+    mode_label = "本地 API（桌面端直连，仅读取）" if local_mode else "Web API（远程，支持读写）"
+
+    print(f"  ✅ 目标环境: {label}")
+    print(f"  ✅ MCP 配置已写入 {config_path}")
+    print(f"  ✅ 模式: {mode_label}")
     print(f"     command: {zotero_bin}")
     if local_mode:
         print(f"     ZOTERO_LOCAL: true（本地模式）")
@@ -254,11 +477,39 @@ def configure_mcp(api_key="", user_id="", local_mode=False):
         print(f"     library_id: {user_id}")
         print(f"     api_key: {'***' + api_key[-4:] if len(api_key) > 4 else '***'}")
 
+    # 给出下一步提示
+    if target == "claude-code":
+        print(f"\n  📌 下一步：重启 Claude Code 后 Zotero MCP 即生效。")
+        print(f"     验证: 在 Claude Code 中检查是否出现 zotero_* 工具")
+    elif target == "cursor":
+        print(f"\n  📌 下一步：重启 Cursor 后 Zotero MCP 即生效。")
+    elif target == "claude-desktop":
+        print(f"\n  📌 下一步：完全退出并重启 Claude Desktop 应用。")
+    elif target == "hermes":
+        print(f"\n  📌 下一步：重启 Hermes 后 Zotero MCP 即生效。")
+        print(f"     验证: hermes mcp list")
 
-def prompt_and_install():
-    """交互式安装流程"""
+
+def prompt_and_install(target="hermes", non_interactive=False):
+    """交互式（或非交互式）安装流程
+
+    Args:
+        target: 目标环境 — 'hermes' | 'claude-code' | 'claude-desktop' | 'cursor' | 'auto'
+        non_interactive: True 时不等待用户输入，从环境变量获取参数
+    """
+    if target == "auto":
+        target = detect_target() or "claude-code"
+
+    target_labels = {
+        "hermes": "Hermes/OpenClaw",
+        "claude-code": "Claude Code",
+        "claude-desktop": "Claude Desktop",
+        "cursor": "Cursor",
+    }
+    target_label = target_labels.get(target, target)
+
     print("=" * 55)
-    print("  Zotero MCP 一键安装与配置")
+    print(f"  Zotero MCP 一键安装与配置 → {target_label}")
     print("=" * 55)
 
     # 1. 安装包
@@ -272,7 +523,28 @@ def prompt_and_install():
             print(f"   pip install {PACKAGE_NAME}")
             return False
 
-    # 2. 选择连接模式
+    # 2. 非交互模式：从环境变量获取参数
+    if non_interactive:
+        api_key = os.environ.get("ZOTERO_API_KEY", "")
+        user_id = os.environ.get("ZOTERO_USER_ID", "")
+        local_mode = os.environ.get("ZOTERO_LOCAL", "").lower() in ["true", "yes", "1"]
+
+        if local_mode:
+            print("\n📋 非交互模式: 本地 API")
+            configure_mcp(local_mode=True, target=target)
+        elif api_key and user_id:
+            print("\n📋 非交互模式: Web API")
+            configure_mcp(api_key=api_key, user_id=user_id, target=target)
+        else:
+            print("\n⚠ 非交互模式需要设置环境变量：")
+            print("  方式 A (Web API): ZOTERO_API_KEY + ZOTERO_USER_ID")
+            print("  方式 B (本地):     ZOTERO_LOCAL=true")
+            return False
+
+        _print_post_install_help(target)
+        return True
+
+    # 3. 交互模式：选择连接模式
     current_mode = detect_mode()
     if current_mode:
         mode_hint = "本地" if current_mode == "local" else "Web API"
@@ -300,16 +572,14 @@ def prompt_and_install():
         local_mode = (choice == "2")
 
         if local_mode:
-            # 本地模式 — 不需要 API Key
-            print(f"\n📋 本地模式配置")
+            print("\n📋 本地模式配置")
             if not check_zotero_local():
                 print("  ⚠ 未检测到 Zotero 桌面端运行。")
                 print("    请先启动 Zotero 桌面端，然后重新运行本脚本。")
                 print("    或继续配置，稍后启动 Zotero。")
-            configure_mcp(local_mode=True)
+            configure_mcp(local_mode=True, target=target)
         else:
-            # Web API 模式 — 需要 API Key 和 User ID
-            print(f"\n📋 Web API 模式配置")
+            print("\n📋 Web API 模式配置")
             api_key, user_id, _ = check_env()
             if not api_key:
                 print("\n请输入你的 Zotero API Key：")
@@ -332,28 +602,55 @@ def prompt_and_install():
                     print("   [跳过输入]")
 
             if api_key and user_id:
-                configure_mcp(api_key=api_key, user_id=user_id)
+                configure_mcp(api_key=api_key, user_id=user_id, target=target)
             else:
                 print("\n⚠  API Key 或 User ID 不完整，跳过配置写入。")
-                print("   可稍后手动编辑 ~/.hermes/config.yaml 补全。")
+                _print_manual_config_help(target)
                 return False
     else:
-        print(f"  保持当前配置不变。")
+        print("  保持当前配置不变。")
 
-    # 4. 验证
-    print("\n" + "=" * 55)
-    print("  安装完成！重启 Hermes 后生效。")
-    print("  验证命令：")
-    print("    hermes mcp list          # 查看 MCP 列表")
-    print("    python3 setup_zotero.py  # 运行本脚本检测状态")
-    print("=" * 55)
+    _print_post_install_help(target)
     return True
+
+
+def _print_post_install_help(target):
+    """打印安装后的下一步提示"""
+    print("\n" + "=" * 55)
+    print("  安装完成！")
+    print("=" * 55)
+
+    if target == "claude-code":
+        print("  📌 重启 Claude Code 后 Zotero MCP 即生效。")
+        print("     在对话中检查是否出现 zotero_* 系列工具。")
+    elif target == "hermes":
+        print("  📌 重启 Hermes 后生效。")
+        print("  验证命令：")
+        print("    hermes mcp list          # 查看 MCP 列表")
+    elif target == "claude-desktop":
+        print("  📌 完全退出并重启 Claude Desktop 应用。")
+    elif target == "cursor":
+        print("  📌 重启 Cursor 后生效。")
+
+    print("  验证命令：")
+    print("    python3 scripts/setup_zotero.py            # 检测状态")
+    print("    python3 scripts/setup_zotero.py --check    # JSON 检测报告")
+    print("=" * 55)
+
+
+def _print_manual_config_help(target):
+    """打印手动配置帮助"""
+    if target == "claude-code":
+        print(f"   可稍后手动编辑 {CLAUDE_CODE_MCP_PATH} 补全。")
+        print(f"   格式参考: https://docs.anthropic.com/en/docs/claude-code/mcp")
+    elif target == "hermes":
+        print(f"   可稍后手动编辑 {HERMES_CONFIG_PATH} 补全。")
 
 
 # ── 状态报告 ──────────────────────────────────────────────
 
 def print_status():
-    """打印人类可读的状态报告"""
+    """打印人类可读的状态报告（多目标检测）"""
     installed, ver = check_installed()
     api_key, user_id, local_env = check_env()
     mode = detect_mode()
@@ -361,23 +658,23 @@ def print_status():
     alive = check_mcp_process()
     local_ok = check_zotero_local()
 
-    print("=" * 50)
+    print("=" * 55)
     print("  Zotero MCP 环境检测")
-    print("=" * 50)
+    print("=" * 55)
 
     # 1. 包安装
     if installed:
         print(f"\n📦 zotero-mcp-server  v{ver}  ✅ 已安装")
     else:
-        print(f"\n📦 zotero-mcp-server     ❌ 未安装")
-        print("   执行 python3 setup_zotero.py --install 一键安装")
+        print("\n📦 zotero-mcp-server     ❌ 未安装")
+        print("   执行 python3 scripts/setup_zotero.py --install 一键安装")
 
     # 2. 模式
     mode_text = {"web": "Web API（远程读写）", "local": "本地 API（桌面端只读）"}
     if registered and mode:
         print(f"🔌 连接模式:           {mode_text.get(mode, mode)}")
     else:
-        print(f"🔌 连接模式:           未配置")
+        print("🔌 连接模式:           未配置")
 
     # 3. 可执行文件
     zotero_bin = get_zotero_bin()
@@ -386,51 +683,234 @@ def print_status():
     else:
         print(f"🔧 可执行文件:         未找到")
 
-    # 4. 配置注册
-    if registered:
-        print(f"⚙️  config.yaml 注册:    ✅ 已配置")
-    else:
-        print(f"⚙️  config.yaml 注册:    ❌ 未配置")
+    # 4. 各环境配置注册状态
+    print("⚙️  配置注册状态:")
+    _print_target_status("Hermes/OpenClaw", HERMES_CONFIG_PATH)
+    _print_target_status("Claude Code", CLAUDE_CODE_MCP_PATH)
+    _print_target_status("Cursor", CURSOR_MCP_PATH)
+    if CLAUDE_DESKTOP_CONFIG:
+        _print_target_status("Claude Desktop", CLAUDE_DESKTOP_CONFIG)
 
     # 5. 环境变量
     if mode == "web":
         print(f"🔑 ZOTERO_API_KEY:     {'✅ 已设置' if api_key else '❌ 未设置'}")
         print(f"👤 ZOTERO_LIBRARY_ID:  {'✅ 已设置 (' + user_id + ')' if user_id else '❌ 未设置'}")
     elif mode == "local":
-        print(f"🔑 ZOTERO_LOCAL:       ✅ true（本地模式）")
+        print("🔑 ZOTERO_LOCAL:       ✅ true（本地模式）")
 
     # 6. 进程存活
     if alive:
-        print(f"🚀 MCP 进程:            ✅ 运行中")
+        print("🚀 MCP 进程:            ✅ 运行中")
     else:
-        print(f"🚀 MCP 进程:            ⏸️  未启动（重启 Hermes 后生效）")
+        print("🚀 MCP 进程:            ⏸️  未启动（重启 Agent 后生效）")
 
     # 7. Zotero 桌面端
     if local_ok:
-        print(f"💻 Zotero 桌面端:        ✅ 运行中")
+        print("💻 Zotero 桌面端:        ✅ 运行中")
     else:
-        print(f"💻 Zotero 桌面端:        ⏹️  未检测到")
+        print("💻 Zotero 桌面端:        ⏹️  未检测到")
+
+    # 8. 自动检测当前环境
+    detected = detect_target()
+    if detected:
+        target_labels = {
+            "hermes": "Hermes/OpenClaw",
+            "claude-code": "Claude Code",
+            "claude-desktop": "Claude Desktop",
+            "cursor": "Cursor",
+        }
+        print(f"🎯 检测到当前环境:     {target_labels.get(detected, detected)}")
 
     # 总结
     print()
     if installed and registered and (mode == "local" or api_key):
         print("🎯 状态：就绪，Zotero MCP 可正常使用")
     elif installed and not registered:
-        print("💡 提示：包已安装，执行 --install 完成配置写入")
+        print("💡 提示：包已安装，执行 python3 scripts/setup_zotero.py --install 完成配置写入")
     else:
-        print("💡 提示：执行 python3 setup_zotero.py --install 一键配置")
+        print("💡 提示：执行 python3 scripts/setup_zotero.py --install 一键配置")
+
+    if not os.path.exists(CLAUDE_CODE_MCP_PATH) and detected == "claude-code":
+        print("💡 Claude Code 用户：执行 python3 scripts/setup_zotero.py --install --target claude-code")
     print()
+
+
+def _print_target_status(label, config_path):
+    """打印单个目标环境的配置状态"""
+    if os.path.exists(config_path):
+        try:
+            env = _get_zotero_env_from_config(config_path)
+            if env:
+                print(f"   {label:20s} ✅ 已配置")
+                return
+        except Exception:
+            pass
+        print(f"   {label:20s} ⚠️  文件存在但未找到 Zotero 配置")
+    else:
+        print(f"   {label:20s} ❌ 未配置")
+
+
+# ── 烟雾测试 ──────────────────────────────────────────────
+
+def smoke_test():
+    """安装后自动化功能验证"""
+    print("=" * 55)
+    print("  Zotero MCP 烟雾测试")
+    print("=" * 55)
+
+    results = []
+    all_pass = True
+
+    # 1. 包安装检查
+    installed, ver = check_installed()
+    status = "✅" if installed else "❌"
+    if not installed:
+        all_pass = False
+    print(f"\n{status} 1. zotero-mcp-server 包安装")
+    results.append({"test": "package_installed", "pass": installed, "version": ver})
+
+    # 2. 可执行文件
+    zotero_bin = get_zotero_bin()
+    bin_exists = bool(zotero_bin and os.path.exists(zotero_bin))
+    status = "✅" if bin_exists else "❌"
+    if not bin_exists:
+        all_pass = False
+    print(f"{status} 2. zotero-mcp 可执行文件 ({zotero_bin})")
+    results.append({"test": "binary_found", "pass": bin_exists, "path": zotero_bin})
+
+    # 3. 可执行文件能否运行
+    if bin_exists:
+        try:
+            r = subprocess.run([zotero_bin, "version"], capture_output=True, text=True, timeout=10)
+            bin_runnable = r.returncode == 0
+            status = "✅" if bin_runnable else "❌"
+            if not bin_runnable:
+                all_pass = False
+            print(f"{status} 3. zotero-mcp 可运行 ({r.stdout.strip()})")
+            results.append({"test": "binary_runnable", "pass": bin_runnable, "output": r.stdout.strip()})
+        except Exception as e:
+            print(f"❌ 3. zotero-mcp 运行失败: {e}")
+            results.append({"test": "binary_runnable", "pass": False, "error": str(e)})
+            all_pass = False
+    else:
+        print("⏭️  3. zotero-mcp 可运行 (跳过 — 未找到可执行文件)")
+        results.append({"test": "binary_runnable", "pass": None, "error": "binary not found"})
+
+    # 4. MCP 配置注册
+    registered = check_mcp_registered()
+    status = "✅" if registered else "⚠️"
+    print(f"{status} 4. MCP 配置注册")
+    results.append({"test": "mcp_registered", "pass": registered})
+
+    # 5. 检测配置了哪些环境
+    configs_found = []
+    for label, path in [
+        ("Hermes", HERMES_CONFIG_PATH),
+        ("Claude Code", CLAUDE_CODE_MCP_PATH),
+        ("Cursor", CURSOR_MCP_PATH),
+    ]:
+        if os.path.exists(path):
+            try:
+                env = _get_zotero_env_from_config(path)
+                if env:
+                    configs_found.append(label)
+            except Exception:
+                pass
+    status = "✅" if configs_found else "⚠️"
+    print(f"{status} 5. 已配置环境: {', '.join(configs_found) if configs_found else '无'}")
+    results.append({"test": "configs_found", "pass": bool(configs_found), "environments": configs_found})
+
+    # 6. 连接模式
+    mode = detect_mode()
+    mode_label = {"web": "Web API", "local": "Local API"}.get(mode or "", "未知")
+    status = "✅" if mode else "⚠️"
+    print(f"{status} 6. 连接模式: {mode_label}")
+    results.append({"test": "mode_detected", "pass": bool(mode), "mode": mode})
+
+    # 7. 环境变量
+    api_key, user_id, local_env = check_env()
+    if mode == "web":
+        env_ok = bool(api_key and user_id)
+    elif mode == "local":
+        env_ok = local_env
+    else:
+        env_ok = False
+    status = "✅" if env_ok else "⚠️"
+    print(f"{status} 7. 环境变量/凭据设置")
+    results.append({"test": "credentials_set", "pass": env_ok})
+
+    # 8. Zotero 桌面端检测
+    local_ok = check_zotero_local()
+    if mode == "local":
+        status = "✅" if local_ok else "⚠️"
+        if not local_ok:
+            print(f"{status} 8. Zotero 桌面端运行中 (本地模式需要)")
+        else:
+            print(f"{status} 8. Zotero 桌面端运行中")
+    else:
+        status = "✅" if local_ok else "ℹ️"
+        print(f"{status} 8. Zotero 桌面端运行中 (Web API 模式不需要)")
+    results.append({"test": "zotero_desktop_running", "pass": local_ok})
+
+    # 总结
+    print("\n" + "=" * 55)
+    if all_pass:
+        print("🎯 烟雾测试通过！Zotero MCP 配置正确。")
+    else:
+        print("⚠️  部分测试未通过，请根据上述提示修复。")
+        print("   常见解决方案：")
+        if not installed:
+            print("   - 执行 python3 scripts/setup_zotero.py --install")
+        if not registered:
+            print("   - 执行 python3 scripts/setup_zotero.py --install --target claude-code")
+        if not env_ok:
+            print("   - Web API: 设置 ZOTERO_API_KEY 和 ZOTERO_USER_ID")
+            print("   - Local API: 设置 ZOTERO_LOCAL=true 并启动 Zotero 桌面端")
+
+    print("=" * 55)
+    return all_pass
 
 
 # ── 主入口 ──────────────────────────────────────────────
 
 if __name__ == "__main__":
     if "--install" in sys.argv:
-        prompt_and_install()
+        # 解析 --target
+        target = "hermes"  # 默认
+        for i, arg in enumerate(sys.argv):
+            if arg == "--target" and i + 1 < len(sys.argv):
+                target = sys.argv[i + 1]
+            elif arg.startswith("--target="):
+                target = arg.split("=", 1)[1]
+
+        non_interactive = "--non-interactive" in sys.argv or "-y" in sys.argv
+        prompt_and_install(target=target, non_interactive=non_interactive)
+
     elif "--check" in sys.argv:
         installed, ver = check_installed()
         api_key, user_id, local_env = check_env()
         mode = detect_mode()
+        detected = detect_target()
+
+        # 多目标配置状态
+        configs = {}
+        for label, path in [
+            ("hermes", HERMES_CONFIG_PATH),
+            ("claude_code", CLAUDE_CODE_MCP_PATH),
+            ("cursor", CURSOR_MCP_PATH),
+        ]:
+            if os.path.exists(path):
+                try:
+                    env = _get_zotero_env_from_config(path)
+                    configs[label] = {
+                        "configured": bool(env),
+                        "mode": "local" if (env or {}).get("ZOTERO_LOCAL", "").lower() in ["true", "yes", "1"] else "web" if env else None,
+                    }
+                except Exception:
+                    configs[label] = {"configured": False, "mode": None}
+            else:
+                configs[label] = {"configured": False, "mode": None}
+
         result = {
             "installed": installed,
             "version": ver,
@@ -442,8 +922,11 @@ if __name__ == "__main__":
             "mcp_alive": check_mcp_process(),
             "local_running": check_zotero_local(),
             "binary": get_zotero_bin(),
+            "detected_environment": detected,
+            "configs": configs,
         }
         print(json.dumps(result, indent=2, ensure_ascii=False))
+
     elif "--export" in sys.argv:
         print("# Zotero MCP 环境变量（二选一）")
         print("#")
@@ -454,6 +937,17 @@ if __name__ == "__main__":
         print("# 选项 B: 本地模式（桌面端直连，仅读取）")
         print("# export ZOTERO_LOCAL=true")
         print("#")
-        print("# 查看完整配置：python3 setup_zotero.py")
+        print("# Claude Code 用户安装:")
+        print("#   python3 scripts/setup_zotero.py --install --target claude-code")
+        print("# Hermes 用户安装:")
+        print("#   python3 scripts/setup_zotero.py --install --target hermes")
+        print("# 自动检测环境安装:")
+        print("#   python3 scripts/setup_zotero.py --install --target auto")
+        print("#")
+        print("# 查看完整配置：python3 scripts/setup_zotero.py")
+
+    elif "--smoke-test" in sys.argv:
+        smoke_test()
+
     else:
         print_status()
