@@ -689,7 +689,7 @@ A complete academic literature retrieval and writing workflow (8-step method): �
 
 ### In One Sentence
 
-> Topic → Search → Score → Download → Import → Write → Polish. One-stop academic research literature workflow.
+> Research topic → Literature search → Relevance scoring → PDF download → Zotero library import → Writing from literature → Paper polishing / AI-trace removal. One-stop academic research literature workflow.
 
 ### Why This Tool
 
