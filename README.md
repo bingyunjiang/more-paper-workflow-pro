@@ -18,7 +18,7 @@
 [**中文**](#chinese) &nbsp;|&nbsp; [**English**](#english)
 
 <a id="chinese"></a>
-# 📚 More Paper Workflow Pro Skill `v1.0.2-20260603`
+# 📚 More Paper Workflow Pro Skill `v1.0.3-20260603`
 
 完整学术文献检索和写作工作流（8 步法）：①交互式确定研究主题 → ②生成大纲/关键词 → ③制定检索方案 → ④多渠道检索+评分 → **⑤多轮下载（Sci-Hub→SD→IEEE）** → ⑥Zotero 文库管理（架构生成+PDF 导入） → ⑦论文写作 → ⑧论文润色。
 
@@ -826,6 +826,57 @@ Installation guidance is printed if no browser is found. Manual override:
 python3 scripts/auto_sd_downloader.py --browser-path "/custom/path/chrome"
 ```
 
+--- 
+
+### Zotero MCP Configuration (Optional, for Step 6-7 Conversational Operations)
+
+Zotero MCP lets you interact with your Zotero library through conversation — import papers by DOI, search, read PDF full-text, etc. **If not configured, you can still import PDFs manually via drag-and-drop (recommended).**
+
+```bash
+# 1. Check environment
+python3 scripts/setup_zotero.py
+
+# 2. One-click install + configure (auto-detect Claude Code / Hermes / Cursor)
+python3 scripts/setup_zotero.py --install --target auto
+
+# 3. Or explicitly specify target environment
+python3 scripts/setup_zotero.py --install --target claude-code
+
+# 4. Smoke test verification
+python3 scripts/setup_zotero.py --smoke-test
+```
+
+**Supported Agent Environments:**
+
+| Environment | `--target` | Config Method |
+|-------------|-----------|---------------|
+| **Claude Code** | `claude-code` | `claude mcp add` CLI (recommended) or `~/.claude/mcp.json` |
+| Hermes/OpenClaw | `hermes` | `~/.hermes/config.yaml` |
+| Claude Desktop | `claude-desktop` | `zotero-mcp setup` command |
+| Cursor | `cursor` | `~/.cursor/mcp.json` |
+| Auto-detect | `auto` | Auto-select |
+
+**Connection Modes:**
+- **Web API Mode**: Remote connection to zotero.org, full read-write support (requires [API Key](https://www.zotero.org/settings/keys))
+- **Local API Mode**: Direct connection to Zotero desktop (`localhost:23119`), no API Key, read-only
+
+**Non-interactive Installation (CI/CD or scripts):**
+```bash
+# Web API mode
+ZOTERO_API_KEY="your_key" ZOTERO_USER_ID="1234567" \
+python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
+
+# Local API mode
+ZOTERO_LOCAL=true \
+python3 scripts/setup_zotero.py --install --target claude-code --non-interactive
+```
+
+> ⚠️ **VS Code Extension Users**: Claude Code in VS Code registers MCP servers via the `claude mcp add` CLI, not by reading `mcp.json` directly. `setup_zotero.py --install --target claude-code` handles this automatically. After configuration, **fully quit and restart VS Code** (`Cmd+Q`, not `reload-window`).
+>
+> 📖 Detailed Setup Guide: [`docs/ZOTERO_MCP_SETUP.md`](docs/ZOTERO_MCP_SETUP.md)
+>
+> 📖 Offline Install Notes: [`scripts/packages/README.md`](scripts/packages/README.md)
+
 ---
 
 ## 📖 Usage Guide
@@ -988,7 +1039,7 @@ python3 scripts/organize_zotero.py outline-keywords.md --output zotero-architect
 Drag PDFs into corresponding collections in Zotero desktop. Zotero auto-recognizes metadata.
 
 **Method 2: Zotero MCP Conversational Import**
-Import by DOI using `zotero_add_by_doi` and similar tools (built into Hermes / OpenClaw / Claude Code).
+Import by DOI using `zotero_add_by_doi` and similar tools (requires [Zotero MCP Configuration](#zotero-mcp-configuration-optional-for-step-6-7-conversational-operations)).
 
 Run `python3 scripts/setup_zotero.py` to check environment.
 
@@ -1137,6 +1188,31 @@ On macOS, the system `python3` defaults to 3.9. All scripts in this toolkit are 
 ---
 
 ## 📋 Version History
+
+### v1.0.3 (2026-06-03)
+
+#### Zotero MCP Multi-Environment Compatibility
+
+- **`scripts/setup_zotero.py`** comprehensive enhancement:
+  - New `--target` parameter: supports `claude-code` / `hermes` / `cursor` / `claude-desktop` / `auto` (5 target environments)
+  - Claude Code environment **prefers `claude mcp add` CLI registration** (official VS Code extension method), falls back to `mcp.json`
+  - New `_try_claude_mcp_add()` function, handles `-e` flag and `--` separator automatically
+  - New `--non-interactive` mode: reads parameters from environment variables, suitable for CI/CD scripting
+  - New `--smoke-test`: 8 automated verification checks (package → binary → MCP registration → credentials → desktop)
+  - New `detect_target()` for auto-detecting the current agent environment
+  - `--check` JSON output now includes `detected_environment` and `configs` multi-target status fields
+  - Status display upgraded from single item to **multi-environment config registration overview**
+- **`docs/ZOTERO_MCP_SETUP.md`** new: multi-platform setup guide with cross-platform notes and troubleshooting FAQ
+- **`scripts/packages/README.md`** new: wheel platform compatibility notes (confirmed all pure Python, cross-platform)
+- **`.claude/settings.json`** removed from Git tracking (contained personal paths, added to `.gitignore`)
+- **README.md** new Zotero MCP Configuration standalone section
+
+#### Live Testing Validation
+
+- Successfully registered and connected Zotero MCP in VS Code extension Claude Code (`✓ Connected`)
+- Semantic search, library browsing, collection tree reading all functioning (948 items)
+
+---
 
 ### v1.0.2 (2026-06-03)
 
