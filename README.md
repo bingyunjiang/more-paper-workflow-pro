@@ -3,16 +3,22 @@
 [![Claude Code Skill](https://img.shields.io/badge/Claude_Code-Skill-6B46F7?logo=anthropic&logoColor=white)](https://github.com/bingyunjiang/More-paper-workflow-pro-skill)
 [![Hermes](https://img.shields.io/badge/Hermes-Skill-FF6B35?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMSAxNy45M2MtMy45NS0uNDktNy0zLjg1LTctNy45MyAwLS40NC4wNC0uODcuMTEtMS4yOWwxLjg4IDEuODhjLjEuMTEuMjYuMjYuNDcuNDQgMi4yMiAxLjk3IDMuMjYgMi44NyAzLjI2IDIuODcuMjYgMCAuNTItLjEzLjc4LS4zOSAxLjI2LTEuMjYgMS4xMi0zLjI5LS4zMy00Ljg2bC0xLjg5LTEuODljLS4yMi0uMjItLjMzLS4zMy0uNDQtLjQ0LS40Ny0uNDctLjQ3LTEuMjQgMC0xLjcxLjQ3LS40NyAxLjI0LS40NyAxLjcxIDBsLjQ0LjQ0Yy4wMi4wMi4wNC4wNCAxLjQyIDEuNDJsLjIyLS4wNGMxLjY4LS4zMSAzLjI0LjQ2IDMuOTcgMi4wMi0xLjU5IDEuMTktMy4yOSAxLjg5LTQuOTcgMi4wOHoiLz48L3N2Zz4=)](https://github.com/nousresearch/hermes-skills)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Skill-00B4D8?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMSAxNy45M2MtMy45NS0uNDktNy0zLjg1LTctNy45MyAwLS40NC4wNC0uODcuMTEtMS4yOWwxLjg4IDEuODhjLjEuMTEuMjYuMjYuNDcuNDQgMi4yMiAxLjk3IDMuMjYgMi44NyAzLjI2IDIuODcuMjYgMCAuNTItLjEzLjc4LS4zOSAxLjI2LTEuMjYgMS4xMi0zLjI5LS4zMy00Ljg2bC0xLjg5LTEuODljLS4yMi0uMjItLjMzLS4zMy0uNDQtLjQ0LS40Ny0uNDctLjQ3LTEuMjQgMC0xLjcxLjQ3LS40NyAxLjI0LS40NyAxLjcxIDBsLjQ0LjQ0Yy4wMi4wMi4wNC4wNCAxLjQyIDEuNDJsLjIyLS4wNGMxLjY4LS4zMSAzLjI0LjQ2IDMuOTcgMi4wMi0xLjU5IDEuMTktMy4yOSAxLjg5LTQuOTcgMi4wOHoiLz48L3N2Zz4=)](https://github.com/openclaw/openclaw)
-[![Python](https://img.shields.io/badge/Python-3.9_~_3.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/macOS_|_Windows_|_Linux-lightgrey?logo=apple)]()
 [![License](https://img.shields.io/badge/License-MIT-green)]()
+[![科研工具](https://img.shields.io/badge/科研工具-8B5CF6)]()
+[![研究定题](https://img.shields.io/badge/研究定题-06B6D4)]()
+[![文献下载](https://img.shields.io/badge/文献下载-F59E0B)]()
+[![文献检索](https://img.shields.io/badge/文献检索-10B981)]()
+[![学术写作](https://img.shields.io/badge/学术写作-6366F1)]()
+[![论文助手](https://img.shields.io/badge/论文助手-EC4899)]()
+[![Zotero](https://img.shields.io/badge/Zotero-CC2936?logo=zotero&logoColor=white)]()
 
 > **作者：** Dr. Jiang Bingyun　|　**微信：** Bingyunjiang　|　**邮箱：** bingyunjiang@qq.com
 
 [**中文**](#chinese) &nbsp;|&nbsp; [**English**](#english)
 
 <a id="chinese"></a>
-# 📚 More Paper Workflow Pro Skill `v1.0.1-20260602`
+# 📚 More Paper Workflow Pro Skill `v1.0.2-20260603`
 
 完整学术文献检索和写作工作流（8 步法）：①交互式确定研究主题 → ②生成大纲/关键词 → ③制定检索方案 → ④多渠道检索+评分 → **⑤多轮下载（Sci-Hub→SD→IEEE）** → ⑥Zotero 文库管理（架构生成+PDF 导入） → ⑦论文写作 → ⑧论文润色。
 
@@ -487,57 +493,85 @@ macOS 系统 `python3` 默认是 3.9。本工具所有脚本兼容 Python 3.9-3.
 
 ## 📋 版本历史
 
-| 版本 | 日期 | 变更 |
-|------|------|------|
-| **v1.0.1-20260602** | 2026-06-02 | 深度重构 IEEE 下载引擎（v1.0.1），补完 Step 5 出版商路由表，Step 7 写作模式+评审质量门，Step 8 句长波动检测，修复重复下载等核心 Bug |
-| **v1.0.0-20260601** | 2026-06-01 | 首发版本：8 步全流程（定题→检索→评分→下载→入库→写作→润色） |
+### v1.0.2 (2026-06-02)
 
-**v1.0.1-20260602 特性：**
+#### Zotero MCP Server 安装与连接全面升级
 
-**IEEE 下载模块（深度重构，v1.1 → v1.0.1）：**
-- **重写 `download_via_ieee.py`** — 三大关键修复：
-  - **Fetch 时序修复**：旧方案在 `Page.reload` 后才启用 Fetch，PDF 已被 Chrome 内置查看器消费→改为先 `Fetch.enable` 再 `Page.navigate`，原始字节直接捕获
-  - **Referrer 修复**：从 `about:blank` 直接导航到 stamp URL 缺失 Referrer，IEEE 返回 `denyReason=-501`→`Page.navigate` 带文章页 URL 作为 Referrer
-  - **大 PDF 超时修复**：TPEL 等 6.7MB PDF 的 `getResponseBody` 从 5s 增至 30s
-- **从"点击 PDF 按钮→新标签页 reload"改为"提取 stamp URL → 独立标签页 Fetch 预启用捕获"**，不再依赖点击事件和标签页扫描
-- **去除 IP 认证误导**：明确 IEEE 不支持 IP 认证，必须 SSO/Shibboleth 登录
-- **交互式登录流程**：无会话时自动弹出 CDP Chrome 登录页，提示用户在对话中说"已登录"后继续，不再用 `input()` 阻塞
-- **新增 `--login` / `--skip-session-check`** 命令行参数
-- **实测 6/6 通过**（Tang/Siddaiah/Mohamed/Ma/Liu/Awais，PDF 0.8–8.9 MB）
+| 项目 | 修改前 | 修改后 |
+|------|--------|--------|
+| **SKILL.md 描述** | "已随本 skill 封装"（虚） | "脚本一键安装，含本地 wheel 优先离线安装"（实） |
+| **安装方式** | 用户自行 `pip install` | `python3 scripts/setup_zotero.py --install` 全自动安装 |
+| **连接模式** | 仅 Web API（硬编码） | Web API + 本地 API 二选一，通过 `--mode` 参数切换 |
+| **离线能力** | 无 | 74 个纯 Python wheel（~15 MB）本地缓存于 `scripts/zotero_wheels/`，平台编译包自动补全 |
+| **状态检测** | 仅显示环境变量 | 显示连接模式、后台进程、API Key 配置、wheel 完整性 |
 
-**新增 `sd_download.py`** — 共享混合下载核心库，双重策略自动回退
-- **重写 `parallel_sd_download.py`** — 导入共享核心，清理冗余代码
-- **重写 `auto_sd_downloader.py`** — 清理 6 处死代码，持久 Profile 保留登录，不再杀浏览器
-- **增强 `batch_resolve_pii.py`** — 新增纯文本/纯文本引用格式自动检测和 DOI 提取
-- **增强 `cdp_utils.py`** — `start_browser()` CDP 绑定检测，真实 Profile 失败自动降级；**新增 8 个函数：** `detect_available_browsers()` / `print_browser_setup_guide()`（双/单浏览器自适应检测+安装引导）、`ensure_sd_session()`（下载前检查 SD 权限）、`check_sd_redirect_blocked()`（下载失败诊断——检测 `/abs/` 重定向/Cloudflare/其他三种情况）、`_wait_for_sd_login()`（交互式等待机构登录）、`_navigate_tab_to_sd_login()`（标签页导航到登录页不关闭）、`_print_sd_login_prompt()`（统一机构登录引导 UI）、`_get_browser_name()`（CDP 端口→浏览器名称）；**超时修正 3 处：** `capture_pdf_via_fetch` 总期限 25s→60s、`getResponseBody` 8s→30s、`wait_for_cloudflare` 60s 静默→60s 自解+120s 手动提示
-- **修复重复下载 Bug** — 下载后关闭 PDF 标签页，防止下一篇错误复用
-- **修复提取超时 Bug** — 文章页渲染等待从 12s → 25s
-- **修复残留 PDF 标签页干扰** — `download_one()` 开头清理旧标签页
-- **SD 下载覆盖率从 ~43% 提升至 94.7%**（89/94 篇，1.18 GB）
+**详情：**
 
-**SKILL.md / 文档同步更新：**
-- **Step 5 重构为 4 轮路由表**：Sci-Hub → SD CDP → IEEE CDP → 多出版商 CDP，每条标注 DOI 前缀和脚本名
-- **IEEE 两步走策略整体重写**：v1.0.1流程替代旧版点击+reload 描述
-- **Cookie 诊断增加 IEEE SSO 提示**：明确"IEEE 不支持 IP 认证，必须 SSO"
-- **`publisher-access-matrix.md` 同步更新**：IEEE 条目完整重写（3 个修复 + 6/6 实测），测试数据表 / 决策树 / 适配经验同步
-- **新增 triggers**：`10.1109/*` / `doi:10.1109/*` 自动匹配
-- **新增持久化记忆**：`memory/ieee-doi-auto-route.md`，记录 IEEE 论文下载链 Sci-Hub → IEEE CDP，跳过 SD
+- **`scripts/setup_zotero.py`** 重写为全自动安装器：
+  - `--install` 一键安装：优先使用本地 wheel 离线安装（`scripts/zotero_wheels/`），缺失时自动从 PyPI 下载
+  - `--check` 全面状态检测：模式 / 进程 / 配置 / API Key 完整性
+  - `--mode web` / `--mode local` 切换连接模式
+  - 支持 macOS / Linux / Windows 三平台 wheel 分发
+- **本地 API 模式**：通过 Zotero 桌面端内置 API（`http://127.0.0.1:23119`）直连，仅读取文库，无需 API Key，零网络依赖
+- **Web API 模式**：通过 Zotero Web API（`api.zotero.org`）远程连接，支持读写，需 API Key
+- 依赖清单表格同步更新，安装方式从 "手动 pip install" 改为 "脚本一键安装+模式选择"
 
-**Step 7 新增写作模式选择** — 进入写作前可选的 4 种模式：`full`（完整撰写）、`outline-only`（先细化大纲）、`plan`（多轮引导交互）、`abstract-only`（仅写中英文摘要）
-- **Step 7 新增同行评审仿真（质量门）** — 5 维评审体系（原创 20% / 方法严谨 25% / 证据充分 25% / 论证连贯 15% / 写作质量 15%），限 2 轮修改，低于 5 分回退对应步骤
-- **论文结构模板扩展为双边摘要** — 中文摘要 300-500 字 + English Abstract 150-300 words（独立撰写非翻译），关键词中英文各 3-5 个
-- **Step 8 Level 2 新增句长波动与段落节奏检测** — 5 个检查项：句长波动度 / 段落长度均匀化 / 同义替换综合征 / 二元对比过度 / 内联标题列表，附分章波动度目标表
+---
 
-**v1.0.0-20260601 特性：**
-- 10 个 Python CLI 脚本 + 1 个共享 CDP 模块 (`cdp_utils.py`)
-- Chrome/Edge CDP 协议双浏览器并行下载，96% 成功率
-- 跨平台浏览器自动检测（macOS / Windows / Linux）
-- Sci-Hub + ScienceDirect 两轮下载策略，IP 认证全自动零干预
-- Semantic Scholar / Crossref / OpenAlex 三源免费检索
-- Zotero 文库架构自动生成 + 环境检测
-- PDF 全文多进程批量提取，A/B 方案自动切换
-- 依赖自检、断点续跑、Cloudflare 自动等待
-- Python 3.9-3.14 兼容
+### v1.0.1 (2026-06-02)
+
+#### IEEE 论文下载（重大更新）
+
+- 新增 **IEEE CDP 两步走策略**（`scripts/download_via_ieee.py`）：
+  - Step A（首选）：导航文章页 → 提取 stamp URL → 新标签页 Fetch 预启用捕获（Referrer 校验通过）
+  - Step B（回退）：直连 `stamp/stamp.jsp` / `getPDF/getPDF.jsp`
+  - 交互式登录：`--login` 打开 IEEE SSO 登录页；`--check-session` 检查机构会话
+- **10.1109/ DOI 前缀自动路由**：检测到 IEEE DOI 时自动触发 IEEE 下载脚本，不尝试其他方式
+- **`scripts/batch_resolve_pii.py`**：支持 BibTeX / Markdown 表格 / 纯文本引用三种输入格式，DOI → PII 解析
+
+#### CDP 下载模块重写
+
+- **`scripts/cdp_utils.py`** 抽取共享 CDP 模块（浏览器管理 / Fetch 捕获 / 依赖检查）
+- **`scripts/sd_download.py`** 混合下载核心：策略 A（直连 8s → PDF 标签页 → Fetch 捕获） + 策略 B（文章页 25s 渲染 → 提取 `?md5=` → PDF 标签页 → Fetch 捕获）
+- **`scripts/auto_sd_downloader.py`** 全自动版：启停浏览器 + 断点续跑 + `skip_set` 永久跳过无权限论文（防止重启死循环）
+- **`scripts/parallel_sd_download.py`** 双浏览器并行版（Chrome + Edge 各自独立标签页上下文）
+- Chrome Profile 从 `/tmp/` 迁移到 `~/.hermes/chrome_sd_profile`（持久化，重启保留 Cookie）
+- **PDF 标签页残留修复**：每篇下载后关闭 PDF 标签页，防止下篇误捕获
+- **Python buffer 修复**：`PYTHONUNBUFFERED=1` / `python3 -u` 确保后台进程实时输出
+
+#### Step 7-8 增强
+
+- **Step 7d 同行评审仿真**（质量门）：5 维度评分 + 限 2 轮修改 + Acknowledged Limitations
+- **Step 8 论文润色**（四合一精修引擎）：
+  - Level 1 表面清理 + Level 2 结构优化 + Level 3 去 AI 痕迹（29 种模式）+ Level 4 注入人味
+  - 句长波动检测（burstiness）+ 章节风格指南（不同章节不同波动度目标）
+  - Before/After/Reason 三列修改对照表
+
+#### 其他
+
+- 已知陷阱大幅扩展：Python 3.14 语法 / CDP WebSocket 层级 / SD 文章页渲染时长 / 真实 Profile CDP 端口不绑定
+- `references/publisher-access-matrix.md` / `references/sd-cdp-architecture.md` / `references/cdp-pdf-capture-limitations.md`
+
+---
+
+### v1.0.0 (2026-06-01)
+
+#### Initial Release
+
+- **8 步完整学术工作流**：确定主题 → 大纲关键词 → 检索方案 → 多渠道检索 → 批量下载 → Zotero 管理 → 论文写作 → 论文润色
+- **Step 4 多渠道检索**：Semantic Scholar / Crossref / OpenAlex，相关性 5 维评分（Tier 1-4）
+- **Step 5 批量下载**：Sci-Hub CDP / ScienceDirect CDP 混合策略
+- **Step 6 Zotero 管理**：`organize_zotero.py` 生成集合架构 + PDF 导入
+- **Step 7 论文写作**：4 种模式（full / outline-only / plan / abstract-only）+ 防幻觉机制
+- **Step 8 论文润色**：4 层润色架构 + 中英文通用
+
+---
+
+版本号格式：`v<major>.<minor>.<patch>-<YYYYMMDD>`
+
+- **major**：工作流步骤增减或架构重设计
+- **minor**：单个步骤重大更新（新脚本、新策略、新产出）
+- **patch**：Bug 修复、文档更新、小优化
 
 ---
 
@@ -553,7 +587,7 @@ MIT License
 ---
 
 <a id="english"></a>
-# 📚 More Paper Workflow Pro Skill `v1.0.1-20260602`
+# 📚 More Paper Workflow Pro Skill `v1.0.2-20260603`
 
 > **Author:** Dr. Jiang Bingyun　|　**WeChat:** Bingyunjiang　|　**Email:** bingyunjiang@qq.com
 
@@ -1030,57 +1064,79 @@ On macOS, the system `python3` defaults to 3.9. All scripts in this toolkit are 
 
 ## 📋 Version History
 
-| Version | Date | Changes |
-|------|------|------|
-| **v1.0.1-20260602** | 2026-06-02 | Deep IEEE download engine refactoring (v1.0.1), Step 5 publisher routing table, Step 7 writing modes + peer review gate, Step 8 sentence rhythm detection, fixed core bugs |
-| **v1.0.0-20260601** | 2026-06-01 | Initial release: 8-step full workflow |
+### v1.0.2 (2026-06-03)
 
-**v1.0.1-20260602 Highlights:**
+#### Zotero MCP Server: Full Installation & Connectivity Overhaul
 
-**IEEE Download Module (Deep Refactoring, v1.1 → v1.0.1):**
-- **Rewritten `download_via_ieee.py`** — 3 critical fixes:
-  - **Fetch timing fix**: Old approach enabled Fetch *after* `Page.reload` → PDF consumed by Chrome viewer → `getResponseBody` returns empty. New: enable `Fetch.enable` **before** `Page.navigate`, capture raw bytes directly.
-  - **Referrer fix**: Navigating from `about:blank` to stamp URL lacks Referrer → IEEE returns `denyReason=-501`. New: `Page.navigate` sends article page URL as `referrer`.
-  - **Large PDF timeout fix**: `getResponseBody` timeout increased from 5s to 30s for 6.7MB+ PDFs (TPEL papers).
-- **Changed strategy**: From "click PDF button → detect new tab → reload → capture" to "extract stamp URL (read-only) → independent tab with Fetch pre-enabled → capture"
-- **Removed IP auth misleading guidance**: IEEE requires SSO/Shibboleth, IP auth does not work
-- **Interactive login flow**: No session → auto-open CDP Chrome login page → user says "logged in" via chat → proceed
-- **New CLI flags**: `--login`, `--skip-session-check`
-- **Verified 6/6** (Tang/Siddaiah/Mohamed/Ma/Liu/Awais, PDF 0.8–8.9 MB)
+| Item | Before | After |
+|------|--------|-------|
+| **SKILL.md description** | "Bundled with this skill" (vague) | "One-click install via script, local wheel offline-first" |
+| **Install method** | Manual `pip install` | `python3 scripts/setup_zotero.py --install` fully automated |
+| **Connection modes** | Web API only (hardcoded) | Web API + Local API dual mode, switchable via `--mode` |
+| **Offline capability** | None | 74 pure-Python wheels (~15 MB) cached in `scripts/zotero_wheels/` |
+| **Status check** | Env vars only | Mode, process, API Key config, wheel integrity |
 
-- **New `sd_download.py`** — Shared hybrid download core library, dual strategy auto-fallback
-- **Rewritten `parallel_sd_download.py`** — Imported shared core, cleaned up redundant code
-- **Rewritten `auto_sd_downloader.py`** — Removed 6 dead code paths, persistent profile preserves login, no longer kills browser
-- **Enhanced `batch_resolve_pii.py`** — Added plain text / inline citation format auto-detection and DOI extraction
-- **Enhanced `cdp_utils.py`** — `start_browser()` CDP bind detection; real profile fallback; **8 new functions**: `detect_available_browsers()` / `print_browser_setup_guide()` (dual/single-browser adaptive detection + install guidance), `ensure_sd_session()` (pre-download SD access check), `check_sd_redirect_blocked()` (3-way failure diagnosis: `/abs/` redirect / Cloudflare / unknown), `_wait_for_sd_login()` (interactive institutional login wait), `_navigate_tab_to_sd_login()` (navigate tab to login without closing), `_print_sd_login_prompt()` (unified login guidance UI), `_get_browser_name()` (CDP port → browser name); **3 timeout fixes**: `capture_pdf_via_fetch` deadline 25s→60s, `getResponseBody` 8s→30s, `wait_for_cloudflare` silent 60s→60s auto + 120s manual prompt
-- **Fixed duplicate download bug** — Close PDF tab after download to prevent reuse
-- **Fixed extraction timeout** — Article page render wait increased from 12s → 25s
-- **Fixed stale PDF tab interference** — `download_one()` cleans up old tabs before starting
-- **SD download coverage improved from ~43% to 94.7%** (89/94 papers, 1.18 GB)
+**Details:**
 
-**SKILL.md / Docs Sync:**
-- **Step 5 restructured into 4-round routing table**: Sci-Hub → SD CDP → IEEE CDP → Multi-Publisher CDP, each annotated with DOI prefix and script name
-- **IEEE two-step strategy rewritten**: v1.0.1 flow replaces old click+reload description
-- **Cookie diagnosis updated**: Added "IEEE requires SSO, IP auth does not work"
-- **`publisher-access-matrix.md` synced**: IEEE entry fully rewritten (3 fixes + 6/6 results), test data / decision tree / publisher notes updated
-- **New triggers**: `10.1109/*` / `doi:10.1109/*` auto-match
-- **Persistent memory**: `memory/ieee-doi-auto-route.md` records IEEE download chain: Sci-Hub → IEEE CDP, skip SD
+- **`scripts/setup_zotero.py`** rewritten as fully automated installer:
+  - `--install` one-click: local wheel offline-first, auto-download missing from PyPI
+  - `--check` comprehensive status: mode / process / config / API Key
+  - `--mode web` / `--mode local` connection mode switching
+  - macOS / Linux / Windows platform wheel distribution
+- **Local API mode**: Direct Zotero desktop API (`http://127.0.0.1:23119`), read-only, no API Key, zero network
+- **Web API mode**: Zotero Web API (`api.zotero.org`), read-write, requires API Key
+- Dependency table synced: install method changed from "manual pip install" to "script-based one-click + mode selection"
 
-- **Step 7 Writing Mode Selection** — 4 modes before writing: `full` (complete paper), `outline-only` (refine outline first), `plan` (multi-round guided planning), `abstract-only` (Chinese/English abstract only)
-- **Step 7 Peer Review Simulation (Quality Gate)** — 5-dimension review system (Originality 20% / Methodological Rigor 25% / Evidence Sufficiency 25% / Coherence 15% / Writing Quality 15%), max 2 revision rounds, return to corresponding step if score <5
-- **Dual-Language Abstract Template** — Chinese abstract 300-500 words + English Abstract 150-300 words (independently written, not translated), keywords 3-5 per language
-- **Step 8 Level 2 Sentence Rhythm Detection** — 5 checks: sentence-length variance / paragraph-length uniformity / synonym substitution syndrome / binary contrast overuse / inline heading lists, with per-chapter variance targets
+---
 
-**v1.0.0-20260601 Highlights:**
-- 10 Python CLI scripts + 1 shared CDP module (`cdp_utils.py`)
-- Chrome/Edge CDP dual-browser parallel download, 96% success rate
-- Cross-platform auto browser detection (macOS / Windows / Linux)
-- Sci-Hub + ScienceDirect two-round download strategy, IP auth fully automatic
-- Semantic Scholar / Crossref / OpenAlex three-source free search
-- Zotero library architecture auto-generation + environment check
-- PDF full-text multi-process batch extraction, A/B scheme auto-switch
-- Dependency self-check, resumable downloads, Cloudflare auto-wait
-- Python 3.9-3.14 compatibility
+### v1.0.1 (2026-06-02)
+
+#### IEEE Paper Download (Major Update)
+
+- New **IEEE CDP two-step strategy** (`scripts/download_via_ieee.py`)
+- **10.1109/ DOI prefix auto-routing**: IEEE detection triggers dedicated script, skips other methods
+- **`scripts/batch_resolve_pii.py`**: BibTeX / Markdown table / plain text citation input support
+
+#### CDP Download Module Overhaul
+
+- **`scripts/cdp_utils.py`** shared CDP module (browser management / Fetch capture / dependency check)
+- **`scripts/sd_download.py`** hybrid download core: Strategy A (direct 8s) + Strategy B (article page 25s render)
+- **`scripts/auto_sd_downloader.py`** fully automated: browser lifecycle + resume + `skip_set` for permanently inaccessible papers
+- **`scripts/parallel_sd_download.py`** dual-browser parallel (Chrome + Edge independent tab contexts)
+- Chrome Profile migrated from `/tmp/` to `~/.hermes/chrome_sd_profile` (persistent, Cookie survives restart)
+- **PDF tab residue fix**: Close PDF tab after each download to prevent cross-contamination
+- **Python buffer fix**: `PYTHONUNBUFFERED=1` / `python3 -u` for real-time background output
+
+#### Step 7-8 Enhancements
+
+- **Step 7d Peer Review Simulation** (Quality Gate): 5-dimension scoring + 2 revision rounds max
+- **Step 8 Polishing** (4-in-1 refinement engine): Surface cleanup + Structure + De-AI (29 patterns) + Human voice injection
+
+#### Other
+
+- Expanded known pitfalls: Python 3.14 syntax / CDP WebSocket layers / SD article render timing / Real Profile CDP port binding
+- `references/publisher-access-matrix.md` / `references/sd-cdp-architecture.md` / `references/cdp-pdf-capture-limitations.md`
+
+---
+
+### v1.0.0 (2026-06-01)
+
+#### Initial Release
+
+- **8-step full academic workflow**: Topic definition → Outline → Search strategy → Multi-source retrieval → Batch download → Zotero management → Paper writing → Paper polishing
+- **Step 4 Multi-source Search**: Semantic Scholar / Crossref / OpenAlex, 5-dimension relevance scoring
+- **Step 5 Batch Download**: Sci-Hub CDP / ScienceDirect CDP hybrid strategy
+- **Step 6 Zotero Management**: `organize_zotero.py` collection architecture generation + PDF import
+- **Step 7 Paper Writing**: 4 modes (full / outline-only / plan / abstract-only) + anti-hallucination
+- **Step 8 Paper Polishing**: 4-layer refinement architecture, Chinese/English universal
+
+---
+
+Version format: `v<major>.<minor>.<patch>-<YYYYMMDD>`
+
+- **major**: Workflow step additions/removals or architecture redesign
+- **minor**: Major single-step update (new scripts, new strategies, new outputs)
+- **patch**: Bug fixes, docs updates, minor optimizations
 
 ---
 
