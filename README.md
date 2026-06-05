@@ -16,7 +16,7 @@
 [**中文**](#chinese) &nbsp;|&nbsp; [**English**](#english)
 
 <a id="chinese"></a>
-# 📚 More Paper Workflow Pro Skill `v1.0.4-20260604`
+# 📚 More Paper Workflow Pro Skill `v1.0.5-20260605`
 
 ### 为什么需要这个工具
 
@@ -44,7 +44,7 @@
 
 **More Paper Workflow Pro Skill** 是一套完整的学术文献工作流工具链，覆盖从研究方向确定到论文润色投稿的全过程。10 个 Python CLI 脚本 + 1 个共享模块，可独立使用或接入 Hermes/OpenClaw/Claude Code 等 AI Agent 实现对话式编排。
 
-完整学术文献检索和写作工作流（8 步法）：①交互式确定研究主题 → ②生成大纲/关键词 → ③制定检索方案 → ④多渠道检索+评分 → **⑤多轮下载（Sci-Hub→SD→IEEE）** → ⑥Zotero 文库管理（架构生成+PDF 导入） → ⑦论文写作 → ⑧论文润色。
+完整学术文献检索和写作工作流（8 步法）：①交互式确定研究主题 → ②生成大纲/关键词 → ③制定检索方案 → ④多渠道检索+评分 → **⑤多轮下载（Sci-Hub→SD→IEEE）** → ⑥Zotero 文库管理（架构生成+PDF 导入+综述矩阵） → ⑦论文写作（含文献综述+GB/T 7714 完整规范） → ⑧论文润色。
 
 ### 设计哲学：AI 辅助 ≠ AI 替代
 
@@ -80,10 +80,13 @@
 - 按论文大纲自动生成集合结构和标签方案
 - 支持手动拖拽导入或 Zotero MCP 对话式导入
 - 环境检测脚本一键诊断 Zotero 配置状态
+- 🆕 13 列文献综述矩阵（Step 6e）：按证据优先级逐级回退提取（笔记→标注→元数据→全文），产出结构化 CSV/Markdown 证据基础
 
 **✍️ 论文写作与润色（Step 7-8）**
 - 逐章按 Zotero 分类读取 PDF 原文作为知识库，交互确认引用
 - 直接读 PDF 抑制大模型幻觉——引用精确性高于 RAG 分块方案
+- 🆕 文献综述专属写作模式（8 节骨架 + 7 条写作纪律）
+- 🆕 GB/T 7714-2015 完整引用格式规范（排序/作者/类型代码/缺失处理）
 - PyMuPDF 多进程批量提取（<20 篇按需精读 / ≥20 篇全量并行）
 - 论文润色：结构精炼 + 术语统一 + 去 AI 痕迹 + 引用校验
 
@@ -105,6 +108,9 @@
 | 12 | **PDF 全文批量提取** | PyMuPDF 多进程并行提取，A/B 方案按文献量自动切换 |
 | 13 | **跨平台浏览器管理** | `CHROME_PATH`/`EDGE_PATH` 环境变量或 `--browser-path` 参数覆盖 |
 | 14 | **依赖自动检测** | 启动时检查 `websocket-client`/`PyMuPDF`，缺失即打印安装指引 |
+| 15 | 🆕 **文献综述矩阵** | 13 列结构化证据提取（作者年份→DOI），笔记→标注→元数据→全文逐级回退 |
+| 16 | 🆕 **综述 DOCX 写作** | 8 节骨架 + 观点分组/合并引用/对比表达 7 条写作纪律 |
+| 17 | 🆕 **GB/T 7714 完整规范** | 中英排序、作者格式、7 种文献类型代码、缺失元数据处理 |
 
 ## 🏆 核心优势
 
@@ -361,11 +367,23 @@ python3 scripts/setup_zotero.py --smoke-test
 
 > **为什么不用 Zotero 云端上传？** Zotero 免费版仅有 300MB 文件存储，批量下载的 PDF 总量可达 1.4GB+，远超免费额度。拖拽导入的 PDF 仅保存在本地，元数据同步到云端（几乎不占空间），不影响多设备同步。同时免去了申请和配置 API Key 的步骤，降低使用门槛。
 
+#### 6e: 生成文献综述矩阵 🆕
+
+> 在写作前对核心文献进行结构化审阅，产出 13 列 CSV/Markdown 证据矩阵。
+
+**触发方式：** 文库整理完成后，在对话中说「生成综述矩阵」或「文献矩阵」。
+
+**矩阵包含：** 作者年份 | 标题 | 研究问题 | 理论/概念 | 数据/样本 | 方法 | 核心发现 | 贡献 | 局限 | 与我的主题关系 | 可引用摘录 | 我的笔记 | DOI/URL
+
+**证据优先级：** Zotero 笔记 → 标注/高亮 → 元数据/摘要 → PDF 全文（逐级回退，不一开始就读全文）
+
+> 参考文件：`references/literature-review-matrix-schema.md`
+
 ### Step 7: 论文写作
 
 > 💬 基于 Zotero 文库中的文献，开始撰写论文。
 
-**写作模式选择（4 种）：** 进入写作前选择模式：
+**写作模式选择（5 种）：** 进入写作前选择模式：
 
 | 模式 | 场景 | 说明 |
 |------|------|------|
@@ -373,6 +391,7 @@ python3 scripts/setup_zotero.py --smoke-test
 | `outline-only` | 先细化大纲 | 将章节大纲细化到 3-4 级标题 |
 | `plan` | 多轮引导交互 | 逐章与用户确认核心论点、方法、数据后再写 |
 | `abstract-only` | 仅写中英文摘要 | 先产出摘要供审阅或投稿预审 |
+| 🆕 `review` | 文献综述写作 | 8 节骨架 + 7 条写作纪律（观点分组/合并引用/对比表达） |
 
 按大纲逐章写作，每章读取归属的全部 PDF 原文作为知识库，交互确认引用，标注索引。
 
@@ -445,10 +464,15 @@ More-paper-workflow-pro-skill/
 │   ├── organize_zotero.py            ← Step 6  生成 Zotero 文库架构
 │   ├── setup_zotero.py               ← Step 6  Zotero MCP 一键安装+多环境配置+烟雾测试
 │   ├── batch_read_pdfs.py            ← Step 8  PDF 批量提取全文文本
+│   ├── generate_academic_reference_docx.py ← Step 7/8  生成 academic-reference.docx 样式模板
 │   └── packages/                     ← Zotero MCP 离线依赖缓存（76 个 wheel, ~15MB）
 │       └── README.md                 ← wheel 平台兼容性说明
 ├── references/                       ← 模板与参考文档
 │   ├── literature-table-template.md  ← 含评分列的文献表格模板
+│   ├── literature-review-matrix-schema.md ← 🆕 13 列综述矩阵 + 证据优先级
+│   ├── literature-review-docx-guide.md ← 🆕 综述 DOCX 写作结构 + 7 条写作纪律
+│   ├── gbt7714-2015-citation-format.md ← 🆕 GB/T 7714-2015 完整引用格式
+│   ├── academic-reference.docx       ← 🆕 中文论文样式模板（A4/宋体/1.5倍行距）
 │   ├── zotero-structure-template.md  ← Zotero 集合结构示例
 │   ├── zotero-missing-attachments.md ← Zotero 缺 PDF 补下指南
 │   ├── zotero-outline-mapping.md     ← Zotero 大纲对齐 PDF 对照表方案
@@ -527,6 +551,46 @@ macOS 系统 `python3` 默认是 3.9。本工具所有脚本兼容 Python 3.9-3.
 ---
 
 ## 📋 版本历史
+
+### v1.0.5 (2026-06-05)
+
+#### 检索方案全面升级 — T1→T2→T3 路由 + 检索后验证
+
+**Step 3 检索方案设计：从平面映射到三级回退链**
+
+- **旧版：** 每个子课题挂一个来源（如 `Semantic, Crossref`），源不可用即失败
+- **新版：** 每个子课题挂一条 T1→T2→T3 回退链，T1 不足 30 条自动触发 T2，再不足到 T3，每次 fallback 记录原因
+- **6 领域路由规则：** 医学(PubMed→Semantic→Google)、工程(CrossRef→Semantic→Scopus)、CS(arXiv→bioRxiv)、综述(PubMed+CrossRef+arXiv)、中文(CNKI/万方)
+- **检索源能力速查：** 6 个数据源的覆盖范围、API 限制、费用一览
+
+**Step 4 检索后新增三道工序：**
+
+| 工序 | 做什么 | 产出 |
+|------|--------|------|
+| **4a 引文验证** | DOI 格式校验 + 元数据完整性检查（title/authors/year），剔除无效条目 | 干净 DOI 列表 |
+| **4b DOI 去重** | 多源检索合并去重（DOI 主键 + title+author+year 回退键），冲突时保留元数据最完整的条目 | 去重文献表 |
+| **4c .bib 导出** | 统一导出为 BibTeX 格式，含 Tier/Score 标签 + 子课题归属（`note` 字段），Zotero 直接导入 | `文献库.bib` |
+
+**脚本侧：`search_by_topic.py` v3.0**
+
+- **T1→T2→T3 路由：** `--t1 crossref --t2 openalex --t3 semantic_scholar --min-results 30`
+- **Pre-flight 检查：** `--preflight` 测试全部 API 端点可达性
+- **格式导出：** `--export-bib` (.bib)、`--convert` (.ris/.nbib)
+- **DOI 验证：** `--verify-dois` 批量校验 DOI 有效性 + 元数据完整性
+- **布尔查询：** `--bool query_plan.json` 支持 AND/OR/NOT 概念块组合
+- **多策略检索：** `--strategy relevance|cited|recent|all`
+
+#### 综述矩阵 + 文献综述写作 + GB/T 7714 完整规范
+
+- **新增 Step 6e：文献综述矩阵** — 13 列结构化证据提取（作者年份→DOI），按证据优先级逐级回退填充（Zotero 笔记→标注/高亮→元数据→PDF 全文→摘要），产出 `综述矩阵.csv` + `综述矩阵.md`
+- **增强 Step 7 review 论文类型** — 8 节文献综述专属骨架（标题→引言→主题脉络→分主题综述→方法证据→不足未来→小结→参考文献）+ 7 条写作纪律（观点分组/观点-作者格式/合并引用/对比表达/保留不确定性/不编造/缺失标注）
+- **扩展 GB/T 7714-2015 规范** — 完整排序规则（中文在前/拼音序/英文字母序）+ 作者姓名处理 + 7 种文献类型代码 [J/M/C/D/R/EB/OL] + 缺失元数据处理方案
+- **新增 3 个参考文件**：
+  - `references/literature-review-matrix-schema.md` — 综述矩阵 schema
+  - `references/literature-review-docx-guide.md` — 综述 DOCX 写作指南
+  - `references/gbt7714-2015-citation-format.md` — GB/T 7714 完整规范
+- **新增 `scripts/generate_academic_reference_docx.py`** — 生成中文论文样式模板（A4/宋体+Times New Roman/黑体标题/1.5 倍行距），`md_to_docx.py` 自动检测使用
+- **新增 `references/academic-reference.docx`** — pandoc 参考样式文档（解决 md_to_docx.py 长期缺失模板的问题）
 
 ### v1.0.4 (2026-06-04)
 
@@ -709,7 +773,7 @@ MIT License
 ---
 
 <a id="english"></a>
-# 📚 More Paper Workflow Pro Skill `v1.0.4-20260604`
+# 📚 More Paper Workflow Pro Skill `v1.0.5-20260605`
 
 > **Author:** Dr. Jiang Bingyun　|　**WeChat:** Bingyunjiang　|　**Email:** bingyunjiang@qq.com
 
