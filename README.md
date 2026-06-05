@@ -379,7 +379,6 @@ python3 scripts/setup_zotero.py --smoke-test
 
 **连接模式：** Web API（远程读写，需 [API Key](https://www.zotero.org/settings/keys)）或本地 API（桌面端直连，仅读取）。
 
-> ⚠️ **VS Code 扩展版用户**：配置完成后需**完全退出并重启 VS Code**（`Cmd+Q` 而非 `reload-window`）。
 >
 > 📖 详细指南：[`docs/ZOTERO_MCP_SETUP.md`](docs/ZOTERO_MCP_SETUP.md) | 离线安装：[`scripts/packages/README.md`](scripts/packages/README.md)
 
@@ -561,6 +560,28 @@ macOS 系统 `python3` 默认是 3.9。本工具所有脚本兼容 Python 3.9-3.
 ## 📋 版本历史
 
 ### v1.0.5 (2026-06-05)
+
+#### 检索融合更新
+
+借鉴 paper-search-pro，为 Step 3/4 增加 7 项检索增强能力，重构 Step 4 子步骤编号为 4a→4h。
+
+**新增 3 文件：**
+- `references/rcs-rubric.md` — 主题匹配度评鉴指南（RCS 启发，4 级锚定 + 5 种旗标）
+- `scripts/discovery_curve.py` — 饱和度曲线分析（指数拟合估算文献覆盖率）
+- `scripts/arxiv_helper.py` — arXiv L2 条件检索（CS/AI 信号触发）
+
+**修改 5 文件：**
+- `scripts/search_by_topic.py` — +引文网络 `--citation-network`、+语义缓存、+influentialCitationCount
+- `agents/step_4_search_score.md` — 子步骤重编号 4a→4h；评分(4c)/筛选(4d)获正式编号；.bib 升级为检索报告(4g)输出 .md+.xlsx+.pdf+.bib；4e 引文扩展含评分闭环；T4 显式剔除
+- `agents/step_3_search_plan.md` — +arXiv 路由 + Tier 参数表
+- `agents/step_1_topic.md` — +Step 1e 检索深度自动推断
+- `SKILL.md` — +触发词 + 路由/脚本/依赖表同步
+
+**核心变化：**
+```
+4a 引文验证 → 4b 去重 → 4c 评分 → 4d 分级(T4剔除)
+→ 4e 引文扩展(评分闭环) → 4f 饱和度 → 4g 检索报告(.md+.xlsx+.pdf+.bib) → 4h 完成
+```
 
  #### 统一下载路由架构
 
@@ -1447,6 +1468,28 @@ On macOS, the system `python3` defaults to 3.9. All scripts in this toolkit are 
 ## 📋 Version History
 
 ### v1.0.5 (2026-06-05)
+
+#### Search Fusion Update
+
+Integrated 7 retrieval enhancements from paper-search-pro into Step 3/4, restructured Step 4 sub-steps as 4a→4h.
+
+**New files (3):**
+- `references/rcs-rubric.md` — Topic relevance scoring guide (RCS-inspired, 4-level anchoring + 5 flags)
+- `scripts/discovery_curve.py` — Saturation curve analysis (exponential fit for literature coverage estimation)
+- `scripts/arxiv_helper.py` — arXiv L2 conditional search (triggered by CS/AI signals)
+
+**Modified files (5):**
+- `scripts/search_by_topic.py` — +citation network `--citation-network`, +semantic cache, +influentialCitationCount
+- `agents/step_4_search_score.md` — Renumbered sub-steps 4a→4h; scoring (4c)/tiering (4d) now formally numbered; .bib upgraded to search report (4g) outputting .md+.xlsx+.pdf+.bib; 4e citation expansion includes scoring loop; T4 explicitly excluded from export
+- `agents/step_3_search_plan.md` — +arXiv routing + tier-driven parameter table
+- `agents/step_1_topic.md` — +Step 1e auto tier inference (Quick/Standard/Deep)
+- `SKILL.md` — +trigger words + routing/script/dependency table sync
+
+**Core change:**
+```
+4a Validate → 4b Dedup → 4c Score → 4d Tier (T4 excluded)
+→ 4e Citation expansion (scoring loop) → 4f Saturation → 4g Report (.md+.xlsx+.pdf+.bib) → 4h Done
+```
 
 #### Unified Download Router Architecture
 
