@@ -387,7 +387,7 @@ Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md → 论
 | `references/literature-review-docx-guide.md` | Step 7 — 综述 DOCX 写作结构 |
 | `references/gbt7714-2015-citation-format.md` | Step 7 — GB/T 7714 引用格式 |
 | `references/citation-audit-guide.md` | Step 7h — 引用审计方法论 |
-| `references/journal-style-learning-guide.md` | Step 6f — 期刊风格学习方法论 |
+| `references/direct-api-search-fallback.md` | Step 4 — search_by_topic.py 不可用时的直接 API 检索方案 |
 | `references/nature-figure-style-guide.md` | Step 7g — 科研图表设计规则 |
 | `references/publisher-access-matrix.md` | Step 5 — 出版商下载可行性对照表 |
 | `agents/known_pitfalls.md` 🆕 | 全部 — 已知陷阱与故障排除 |

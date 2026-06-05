@@ -221,9 +221,11 @@ def search_openalex(query, limit=20, use_cache=True):
             doi = doi.replace("https://doi.org/", "")
         title = p.get("title", "?")
         year = p.get("publication_year", "?")
-        venue = (p.get("primary_location") or {}).get(
-            "source", {}
-        ).get("display_name", "?")
+        venue = ""
+        primary_loc = p.get("primary_location") or {}
+        source_dict = primary_loc.get("source")
+        if source_dict:
+            venue = source_dict.get("display_name", "?")
         authors = []
         for a in p.get("authorships", []):
             name = (a.get("author") or {}).get("display_name", "")
