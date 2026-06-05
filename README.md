@@ -18,6 +18,25 @@
 <a id="chinese"></a>
 # 📚 More Paper Workflow Pro Skill `v1.0.5-20260605`
 
+## 📑 目录
+
+- [为什么需要这个工具](#为什么需要这个工具)
+- [🎯 适合谁？不适合谁？](#适合谁不适合谁)
+- [📖 简介](#简介)
+- [✨ 功能特性](#功能特性)
+- [🏆 核心优势](#核心优势)
+- [🛡️ 论文质量防线](#论文质量防线)
+- [📋 工作流一览](#工作流一览)
+- [🚀 安装](#安装)
+- [📖 使用指南](#使用指南)
+- [📂 项目结构](#项目结构)
+- [📜 脚本速查](#脚本速查)
+- [❓ 常见问题](#常见问题)
+- [📋 版本历史](#版本历史)
+- [👥 贡献者](#贡献者)
+- [📄 许可](#许可)
+- [🔗 相关链接](#相关链接)
+
 ### 为什么需要这个工具
 
 为什么你的 AI 写论文总在编造参考文献？因为大多数 AI 学术工具把「写论文」当成「生成文本」——至于引用的文献存不存在、论证有没有依据，它们不关心。**好的 AI 工具不应该替代研究者的判断**，而应该让检索更系统、让筛选有评分依据、让写作基于真实论文内容。
@@ -791,6 +810,24 @@ MIT License
 A complete academic literature retrieval and writing workflow (8-step method): ① Interactive research topic definition → ② Outline & keyword generation → ③ Search strategy design → ④ Multi-source search + relevance scoring → **⑤ Multi-round download (Sci-Hub → SD → IEEE)** → ⑥ Zotero library management (architecture generation + PDF import) → ⑦ Paper writing → ⑧ Paper polishing.
 
 ---
+
+## 📑 Table of Contents
+
+- [📖 Introduction](#introduction)
+- [✨ Features](#features)
+- [🏆 Key Advantages](#key-advantages)
+- [🛡️ Quality Defense Line](#quality-defense-line)
+- [📋 Workflow Overview](#workflow-overview)
+- [🚀 Installation](#installation)
+- [📖 Usage Guide](#usage-guide)
+- [📂 Project Structure](#project-structure)
+- [📜 Script Reference](#script-reference)
+- [🎯 Who Is This For?](#who-is-this-for)
+- [❓ FAQ](#faq)
+- [📋 Version History](#version-history)
+- [👥 Contributors](#contributors)
+- [📄 License](#license)
+- [🔗 Links](#links)
 
 ## 📖 Introduction
 
