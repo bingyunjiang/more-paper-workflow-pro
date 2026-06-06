@@ -67,7 +67,11 @@
 
 ### 检索执行
 
-按 Step 3 方案的 L1→L2→L3 分层路由逐子课题检索：
+按 Step 3 方案的 L1→L2→L3 分层路由逐子课题检索。
+
+> **中文查询路由：** 查询含中文字符时，直接走 Wanfang Data（L1），不经过 OpenAlex。
+
+
 
 ```bash
 # L1 OpenAlex：每子课题跑 3 策略（relevance + cited + recent），每策略 50 条

@@ -66,7 +66,7 @@ Step 2 产出（大纲关键词.md）
   → ③ 概念块拆解：每个概念块 ≥2 同义词 + 可选排除词
   → ④ 组装布尔查询：(syn1 OR syn2) AND (syn3 OR syn4) NOT (excl)
   → ⑤ 反模式检查（7 项）
-  → ⑥ 分层路由分配：L1 OpenAlex → L2 Semantic Scholar → L3 PubMed/CNKI
+  → ⑥ 读 Step 2 产出中的「检索语言」字段 → 中文→L1 Wanfang；英文→L1 OpenAlex→L2 Semantic Scholar→L3 PubMed
   → 产出：检索方案.md → 检索方案.pdf
 ```
 
@@ -119,20 +119,29 @@ Step 2 产出（大纲关键词.md）
 
 ### 3c. 工科检索分层架构
 
+路由由 Step 2 产出中的 **「检索语言」** 字段决定。如果直接进入 Step 3（无 Step 2 产出），则从关键词/查询词中自动检测：含中文字符 → 中文路由；否则 → 英文路由。
+
 ```
-L1  OpenAlex         ← 全学科覆盖最广（2.5 亿+），默认首选
-L2  Semantic Scholar ← CS 交叉子领域并行，传统工科回退
-L2  arXiv (条件触发)  ← 🆕 仅 CS/AI 跨域信号时启用（T-0~T-4 新鲜度窗口）
-L3  PubMed           ← 仅医工交叉启用
-L3  Wanfang Data     ← 🆕 中文文献自动检索（机构IP直连或CARSI SSO登录）
-                   本文库尚不支持 CNKI（无开放 API）
+检索语言: 中文
+  → L1  Wanfang Data     ← 🆕 中文文献自动检索（机构IP直连或CARSI SSO登录）
+                          本文库尚不支持 CNKI（无开放 API）
+
+检索语言: 英文
+  → L1  OpenAlex         ← 全学科覆盖最广（2.5 亿+），默认首选
+     L2  Semantic Scholar ← CS 交叉子领域并行，传统工科回退
+     L2  arXiv (条件触发)  ← 🆕 仅 CS/AI 跨域信号时启用（T-0~T-4 新鲜度窗口）
+     L3  PubMed           ← 仅医工交叉启用
+
+检索语言: 中英文混合 → 按子课题拆分，分别走中文/英文路由
 ```
+
+> **为什么中文不走 OpenAlex？** OpenAlex 的中文文献覆盖率仅 24%，且 92% 的中文论文被错标为英文。万方是中文文献的可靠来源。
 
 ### 3c.1 🆕 Wanfang 触发条件
 
 | 信号 | 触发 Wanfang? | 说明 |
 |------|:------------:|------|
-| 查询含中文字符 | ✅ YES | 只要有中文关键词即推荐启用 |
+| 查询含中文字符 | ✅ YES | 中文查询直接以 Wanfang 为 L1，跳过 OpenAlex |
 | 用户明确要求"中文文献"/"万方"/"Wanfang" | ✅ YES | 显式要求 |
 | 仅英文查询且无中文语境 | ⚠️ 推荐 | Agent 判断是否可能遗漏国内团队工作 |
 | 用户明确要求"仅英文" | ❌ NO | 尊重用户意愿 |
