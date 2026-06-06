@@ -5,6 +5,7 @@ description: Use when the user asks for the more-paper academic workflow: resear
 author: Dr. Jiang Bingyun（江博士）
 wechat: Bingyunjiang
 category: research
+license: CC BY-NC-SA 4.0
 related_skills:
   - science-direct-cdp-pipeline: "Overlaps on CDP ScienceDirect download; this skill adds the full 8-step workflow from topic definition to paper polishing."
   - zotero-review-matrix-skill: "Source of literature-review-matrix-schema, literature-review-docx-guide, and gbt7714-2015-citation-format references. Integrated into Steps 6e and 7."
@@ -426,3 +427,15 @@ More-Paper-Workflow-Pro-Skill/
 ├── references/                       ← 模板与参考文档（含 🆕 error_log/decision_log/term_aliases）
 └── docs/
 ```
+
+---
+
+## 版权
+
+© 2026 Dr. Jiang Bingyun (江博士). All rights reserved.
+
+本技能及其全部脚本、文档、参考文件均以 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可发布。
+
+- **BY（署名）**：使用或演绎必须保留原作者署名
+- **NC（非商业）**：禁止用于商业用途
+- **SA（相同方式共享）**：演绎作品必须以相同许可发布

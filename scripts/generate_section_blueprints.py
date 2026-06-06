@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Dr. Jiang Bingyun
+# Licensed under CC BY-NC-SA 4.0 — Attribution-NonCommercial-ShareAlike 4.0 International
+# https://creativecommons.org/licenses/by-nc-sa/4.0/
+#
 """
 Section blueprint generator — produces per-section detailed writing plans that
 map the paper outline + evidence bank to the target journal's style conventions.

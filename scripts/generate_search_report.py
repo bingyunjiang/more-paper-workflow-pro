@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Dr. Jiang Bingyun
+# Licensed under CC BY-NC-SA 4.0 — Attribution-NonCommercial-ShareAlike 4.0 International
+# https://creativecommons.org/licenses/by-nc-sa/4.0/
+#
 """Generate a comprehensive 检索报告.md — full search methodology report.
 
 Complements 检索文献表.md (the raw results table) with a standalone report covering:

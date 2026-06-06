@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Dr. Jiang Bingyun
+# Licensed under CC BY-NC-SA 4.0 — Attribution-NonCommercial-ShareAlike 4.0 International
+# https://creativecommons.org/licenses/by-nc-sa/4.0/
+#
 """
 Zotero MCP 配置工具 — 包含安装、配置、检测三合一。
 

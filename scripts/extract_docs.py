@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Dr. Jiang Bingyun
+# Licensed under CC BY-NC-SA 4.0 — Attribution-NonCommercial-ShareAlike 4.0 International
+# https://creativecommons.org/licenses/by-nc-sa/4.0/
+#
 """
 批量提取工程技术文档文本（.docx / .doc），供大纲优化和文档分析使用。
 

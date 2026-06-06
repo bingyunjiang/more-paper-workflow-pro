@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Dr. Jiang Bingyun
+# Licensed under CC BY-NC-SA 4.0 — Attribution-NonCommercial-ShareAlike 4.0 International
+# https://creativecommons.org/licenses/by-nc-sa/4.0/
+#
 """
 Search academic papers by topic across multiple sources with T1->T2->T3 routing.
 Outputs DOI list, .bib, .ris, or .nbib — ready for PII resolution + download + Zotero import.

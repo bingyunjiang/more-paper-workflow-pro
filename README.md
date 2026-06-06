@@ -2,7 +2,7 @@
 [![Hermes](https://img.shields.io/badge/Hermes-Skill-FF6B35?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMSAxNy45M2MtMy45NS0uNDktNy0zLjg1LTctNy45MyAwLS40NC4wNC0uODcuMTEtMS4yOWwxLjg4IDEuODhjLjEuMTEuMjYuMjYuNDcuNDQgMi4yMiAxLjk3IDMuMjYgMi44NyAzLjI2IDIuODcuMjYgMCAuNTItLjEzLjc4LS4zOSAxLjI2LTEuMjYgMS4xMi0zLjI5LS4zMy00Ljg2bC0xLjg5LTEuODljLS4yMi0uMjItLjMzLS4zMy0uNDQtLjQ0LS40Ny0uNDctLjQ3LTEuMjQgMC0xLjcxLjQ3LS40NyAxLjI0LS40NyAxLjcxIDBsLjQ0LjQ0Yy4wMi4wMi4wNC4wNCAxLjQyIDEuNDJsLjIyLS4wNGMxLjY4LS4zMSAzLjI0LjQ2IDMuOTcgMi4wMi0xLjU5IDEuMTktMy4yOSAxLjg5LTQuOTcgMi4wOHoiLz48L3N2Zz4=)](https://github.com/nousresearch/hermes-skills)
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Skill-00B4D8?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMSAxNy45M2MtMy45NS0uNDktNy0zLjg1LTctNy45MyAwLS40NC4wNC0uODcuMTEtMS4yOWwxLjg4IDEuODhjLjEuMTEuMjYuMjYuNDcuNDQgMi4yMiAxLjk3IDMuMjYgMi44NyAzLjI2IDIuODcuMjYgMCAuNTItLjEzLjc4LS4zOSAxLjI2LTEuMjYgMS4xMi0zLjI5LS4zMy00Ljg2bC0xLjg5LTEuODljLS4yMi0uMjItLjMzLS4zMy0uNDQtLjQ0LS40Ny0uNDctLjQ3LTEuMjQgMC0xLjcxLjQ3LS40NyAxLjI0LS40NyAxLjcxIDBsLjQ0LjQ0Yy4wMi4wMi4wNC4wNCAxLjQyIDEuNDJsLjIyLS4wNGMxLjY4LS4zMSAzLjI0LjQ2IDMuOTcgMi4wMi0xLjU5IDEuMTktMy4yOSAxLjg5LTQuOTcgMi4wOHoiLz48L3N2Zz4=)](https://github.com/openclaw/openclaw)
 [![Platform](https://img.shields.io/badge/macOS_|_Windows_|_Linux-lightgrey?logo=apple)]()
-[![License](https://img.shields.io/badge/License-MIT-green)]()
+[![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?logo=creativecommons&logoColor=white)](LICENSE)
 [![科研工具](https://img.shields.io/badge/科研工具-8B5CF6)]()
 [![研究定题](https://img.shields.io/badge/研究定题-06B6D4)]()
 [![文献下载](https://img.shields.io/badge/文献下载-F59E0B)]()
@@ -785,7 +785,18 @@ macOS 系统 `python3` 默认是 3.9。本工具所有脚本兼容 Python 3.9-3.
 
 ## 📄 许可
 
-MIT License
+© 2026 Dr. Jiang Bingyun (江博士). All rights reserved.
+
+本技能及其全部脚本、文档、参考文件均以 [**CC BY-NC-SA 4.0**](https://creativecommons.org/licenses/by-nc-sa/4.0/) 许可发布。
+
+| 条款 | 含义 |
+|------|------|
+| **BY（署名）** | 使用或演绎必须保留原作者署名 |
+| **NC（非商业）** | 禁止用于商业用途（包括付费培训、SaaS 服务） |
+| **SA（相同方式共享）** | 演绎作品必须以相同许可发布，不得闭源 |
+
+> ⚠️ **注意：** 本仓库为公开参考实现。直接 fork 并移除版权声明构成侵权。
+> 商业授权需求请联系：bingyunjiang@qq.com
 
 ## 🔗 相关链接
 
@@ -1572,7 +1583,18 @@ Version format: `v<major>.<minor>.<patch>-<YYYYMMDD>`
 
 ## 📄 License
 
-MIT License
+© 2026 Dr. Jiang Bingyun (江博士). All rights reserved.
+
+This skill and all its scripts, documents, and reference files are licensed under [**CC BY-NC-SA 4.0**](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+| Term | Meaning |
+|------|---------|
+| **BY (Attribution)** | You must retain the original author attribution. |
+| **NC (NonCommercial)** | No commercial use (including paid training, SaaS). |
+| **SA (ShareAlike)** | Derivative works must use the same license — no closed-source forks. |
+
+> ⚠️ **Notice:** This is a public reference implementation. Forking and removing the copyright notice constitutes infringement.
+> For commercial licensing, contact: bingyunjiang@qq.com
 
 ## 🔗 Links
 
