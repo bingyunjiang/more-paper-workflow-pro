@@ -226,38 +226,64 @@ def _build_prisma_flow(
 ) -> str:
     """Build a textual PRISMA-S flow diagram from available data."""
 
-    total = len(rows)
+    total = len(rows)  # final T1-T3 count — NOT the raw search count
     meta = metadata or {}
 
-    # Per-source breakdown if available
-    source_breakdown = meta.get("source_breakdown", {})
+    # ── Per-source breakdown (supports nested dicts for per-stage counts) ──
+    source_breakdown_raw = meta.get("source_breakdown", {})
+    source_breakdown: Dict[str, Dict] = {}
+    if source_breakdown_raw:
+        for src, val in source_breakdown_raw.items():
+            if isinstance(val, dict):
+                # Nested: {"openalex": {"raw": 65, "dedup": 55, "named": "OpenAlex"}}
+                source_breakdown[src] = {
+                    "raw": val.get("raw", 0),
+                    "dedup": val.get("dedup"),
+                    "verified": val.get("verified"),
+                    "named": val.get("named", src),
+                }
+            else:
+                # Flat int: {"openalex": 65} — backward compat
+                source_breakdown[src] = {"raw": int(val)}
     if not source_breakdown:
+        # No metadata at all — count from final rows (source display only)
         src_counts = Counter(r.get("source", "").strip() for r in rows)
-        source_breakdown = dict(src_counts)
+        for src, cnt in src_counts.items():
+            source_breakdown[src] = {"raw": cnt}
 
-    # Counts from metadata or derived
-    raw_total = meta.get("raw_total", total)
-    after_dedup = meta.get("after_dedup", total)
-    after_verify = meta.get("after_verify", total)
+    # ── Stage counts from metadata ONLY — never fall back to len(rows) ──
+    # len(rows) is the final filtered T1-T3 table; raw/after_dedup/after_verify
+    # are order-of-magnitude larger and MUST come from metadata.
+    raw_total = meta.get("raw_total")
+    after_dedup = meta.get("after_dedup")
+    after_verify = meta.get("after_verify")
     t4_removed = meta.get("t4_removed", 0)
     expansion_added = meta.get("expansion_added", 0)
+
+    has_flow = raw_total is not None and after_dedup is not None
 
     tier_counts = Counter(r.get("tier", "").strip() for r in rows)
     t1 = tier_counts.get("T1", 0)
     t2 = tier_counts.get("T2", 0)
     t3 = tier_counts.get("T3", 0)
 
-    # Derive missing values
-    if raw_total <= total and after_dedup <= total:
-        # Metadata not provided, estimate from available data
-        raw_total = max(total, meta.get("raw_total", total + t4_removed))
-        after_dedup = meta.get("after_dedup", total + t4_removed)
-        after_verify = total + t4_removed
-        t4_removed = meta.get("t4_removed", raw_total - total + (expansion_added or 0))
-
     lines = []
     lines.append("### 3.1 PRISMA-S 流程图")
     lines.append("")
+
+    if not has_flow:
+        lines.append("> ⚠️ 缺少检索元数据 (`--metadata search_metadata.json`)，无法绘制完整的 PRISMA-S 流程图。")
+        lines.append("> 以下为最终文献库的 Tier 分布摘要：")
+        lines.append("")
+        lines.append("```")
+        lines.append(f"  ⭐ T1 (≥20): {t1} 篇 — 核心文献")
+        lines.append(f"  📘 T2 (15-19): {t2} 篇 — 重要文献")
+        lines.append(f"  📄 T3 (10-14): {t3} 篇 — 参考文献")
+        lines.append(f"  📊 最终文献库: {total} 篇 (T1-T3)")
+        lines.append("```")
+        lines.append("")
+        return "\n".join(lines)
+
     lines.append("```")
     lines.append(f"  多渠道原始检索: {raw_total} 篇")
     lines.append("  │")
@@ -269,14 +295,20 @@ def _build_prisma_flow(
         "arxiv": "arXiv",
         "pubmed": "PubMed",
     }
-    for src, cnt in sorted(source_breakdown.items(), key=lambda x: -x[1]):
-        db_label = db_names.get(src.lower().replace(" ", "_"), src)
+    for src, sb in sorted(source_breakdown.items(), key=lambda x: -(x[1].get("raw", 0))):
+        cnt = sb.get("raw", 0)
+        db_label = sb.get("named") or db_names.get(src.lower().replace(" ", "_"), src)
         lines.append(f"  ├─ {db_label}: {cnt} 篇")
 
     lines.append("  │")
-    lines.append(f"  ▼ DOI去重: {after_dedup} 篇  (移除 {raw_total - after_dedup} 篇重复)")
+    dedup_removed = raw_total - after_dedup
+    lines.append(f"  ▼ DOI去重: {after_dedup} 篇  (移除 {dedup_removed} 篇重复)")
     lines.append("  │")
-    lines.append(f"  ▼ 引文验证: {after_verify} 篇  (移除 {after_dedup - after_verify} 篇无效/残缺)")
+    if after_verify is not None:
+        verify_removed = after_dedup - after_verify
+        lines.append(f"  ▼ 引文验证: {after_verify} 篇  (移除 {verify_removed} 篇无效/残缺)")
+    else:
+        lines.append(f"  ▼ 引文验证: (未记录)")
     lines.append("  │")
     lines.append(f"  ▼ 五维度评分 + Tier 分级:")
     lines.append(f"  ├─ ⭐ T1 (≥20): {t1} 篇 — 核心文献，必须下载")
@@ -336,15 +368,18 @@ def build_report(
     meta = metadata or {}
     sat = saturation or {}
 
-    total = len(rows)
+    total = len(rows)  # final T1-T3 count — NOT the raw search count
     tier_counts = stats.get("tier_counts", {})
     t1 = tier_counts.get("T1", 0)
     t2 = tier_counts.get("T2", 0)
     t3 = tier_counts.get("T3", 0)
     t4_removed = meta.get("t4_removed", 0)
     expansion_added = meta.get("expansion_added", 0)
-    raw_total = meta.get("raw_total", total + t4_removed - expansion_added)
-    after_dedup = meta.get("after_dedup", raw_total)
+    # Stage counts from metadata ONLY — never derived from len(rows)
+    raw_total = meta.get("raw_total")            # None when metadata absent
+    after_dedup = meta.get("after_dedup")        # None when metadata absent
+    after_verify_val = meta.get("after_verify")  # None when metadata absent
+    has_flow = raw_total is not None and after_dedup is not None
 
     lines = []
     lines.append(f"# 文献检索报告")
@@ -367,10 +402,16 @@ def build_report(
     lines.append(f"| 检索深度 | {summary.get('tier', 'standard').upper()} |")
     lines.append(f"| 数据库 | {summary.get('databases', 'OpenAlex, Semantic Scholar, Crossref')} |")
     lines.append(f"| 检索策略 | relevance + cited + recent |")
-    lines.append(f"| 原始检索结果 | {raw_total} 篇 |")
-    lines.append(f"| DOI 去重后 | {after_dedup} 篇 |")
-    lines.append(f"| 引文验证后 | {meta.get('after_verify', after_dedup)} 篇 |")
-    lines.append(f"| 评分筛选后 | {total + t4_removed} 篇 (T1: {t1}, T2: {t2}, T3: {t3}, T4: {t4_removed}) |")
+
+    # Pipeline counts — show "—" when metadata not provided
+    lines.append(f"| 原始检索结果 | {raw_total if raw_total is not None else '—'} 篇 |")
+    lines.append(f"| DOI 去重后 | {after_dedup if after_dedup is not None else '—'} 篇 |")
+    lines.append(f"| 引文验证后 | {after_verify_val if after_verify_val is not None else '—'} 篇 |")
+    if not has_flow:
+        lines.append(f"| ⚠️ 精确流水线 | 需提供 `--metadata search_metadata.json` 以恢复完整计数 |")
+
+    scored_total = total + t4_removed
+    lines.append(f"| 评分筛选后 | {scored_total} 篇 (T1: {t1}, T2: {t2}, T3: {t3}, T4: {t4_removed}) |")
     if expansion_added > 0:
         lines.append(f"| 引文扩展 | +{expansion_added} 篇 (种子: {meta.get('expansion_seeds', '?')} 篇 T1) |")
     lines.append(f"| **最终文献库** | **{total} 篇** (T1: {t1} | T2: {t2} | T3: {t3}) |")

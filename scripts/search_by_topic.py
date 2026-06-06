@@ -342,9 +342,8 @@ def search_openalex(query, limit=20, use_cache=True):
         year = p.get("publication_year", "?")
         venue = ""
         primary_loc = p.get("primary_location") or {}
-        source_dict = primary_loc.get("source")
-        if source_dict:
-            venue = source_dict.get("display_name", "?")
+        source = primary_loc.get("source") or {}
+        venue = source.get("display_name", "?")
         authors = []
         for a in p.get("authorships", []):
             name = (a.get("author") or {}).get("display_name", "")

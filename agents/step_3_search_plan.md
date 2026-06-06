@@ -66,7 +66,7 @@ Step 2 产出（大纲关键词.md）
   → ③ 概念块拆解：每个概念块 ≥2 同义词 + 可选排除词
   → ④ 组装布尔查询：(syn1 OR syn2) AND (syn3 OR syn4) NOT (excl)
   → ⑤ 反模式检查（7 项）
-  → ⑥ 读 Step 2 产出中的「检索语言」字段 → 中文→L1 CNKI→L2 Wanfang；英文→L1 OpenAlex→L2 Semantic Scholar→L3 PubMed
+  → ⑥ 读 Step 2 产出中的「检索语言」字段 → 中文→L1 CNKI→L2 Wanfang；英文→L1 OpenAlex→L2 Crossref→L2 Semantic Scholar→L3 PubMed
   → 产出：检索方案.md → 检索方案.pdf
 ```
 
@@ -129,9 +129,14 @@ Step 2 产出（大纲关键词.md）
 
 检索语言: 英文
   → L1  OpenAlex         ← 全学科覆盖最广（2.5 亿+），默认首选
-     L2  Semantic Scholar ← CS 交叉子领域并行，传统工科回退
+     L2  Crossref         ← DOI/出版社元数据补充（必选源，不可跳过）
+     L2  Semantic Scholar ← CS 交叉子领域并行，传统工科回退；用于影响力/引文富集
      L2  arXiv (条件触发)  ← 🆕 仅 CS/AI 跨域信号时启用（T-0~T-4 新鲜度窗口）
      L3  PubMed           ← 仅医工交叉启用
+
+> **🔴 Deep tier 下 Crossref 强制规则：** 当检索深度为 deep 时，Crossref 必须作为英文文献补充检索源执行，
+> 不得仅用 OpenAlex 完成英文检索。Standard tier 下，若 Semantic Scholar 返回 429 或中文源不可用，
+> Crossref 同样必须启用作为补充源。
 
 检索语言: 中英文混合 → 按子课题拆分，分别走中文/英文路由
 ```
