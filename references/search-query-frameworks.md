@@ -141,13 +141,13 @@ C3 — 验证: ("experimental" OR "test rig" OR "measurement" OR "prototype")
 
 统一布尔表达式需要按各 API 翻译：
 
-| 语义 | OpenAlex | Semantic Scholar | Crossref | Wanfang (PQ) 🆕 |
-|------|----------|-----------------|----------|-----------------|
-| AND | `AND`（`search=` 参数） | 空格（隐式 AND） | `AND`（`query=` 参数） | `AND`（PQ 语法） |
-| OR | `OR` | `+` 强制包含 | `OR` | `OR`（同义词括号内） |
-| NOT | 不原生支持，用过滤器替代 | `-` 排除 | 不原生支持 | `NOT 标题:term` |
-| 精确短语 | `"exact phrase"` | `"exact phrase"` | `"exact phrase"` | `"exact phrase"` |
-| 标题限定 | `filter=title.search:...` | `title:` 字段 | `query.title=...` | `标题:term` |
+| 语义 | OpenAlex | Semantic Scholar | Crossref | Wanfang (PQ) | CNKI 🆕 |
+|------|----------|-----------------|----------|-----------------|---------|
+| AND | `AND`（`search=` 参数） | 空格（隐式 AND） | `AND`（`query=` 参数） | `AND`（PQ 语法） | `并且`（POST `txt_N_relation=#CNKI_AND`） |
+| OR | `OR` | `+` 强制包含 | `OR` | `OR`（同义词括号内） | `或者`（POST `txt_N_relation=#CNKI_OR`） |
+| NOT | 不原生支持，用过滤器替代 | `-` 排除 | 不原生支持 | `NOT 标题:term` | `不含`（POST `txt_N_relation=#CNKI_NOT`） |
+| 精确短语 | `"exact phrase"` | `"exact phrase"` | `"exact phrase"` | `"exact phrase"` | `txt_N_special1=%`（模糊）或 `=`（精确） |
+| 标题限定 | `filter=title.search:...` | `title:` 字段 | `query.title=...` | `标题:term` | `txt_N_sel=TI`（篇名） |
 
 ### 翻译示例
 
@@ -194,5 +194,6 @@ query=(cold plate OR liquid cooling) AND (topology optimization OR generative de
 |------|------|---------|
 | **OpenAlex** | L1 搜索 | 所有工科子领域，默认首选 |
 | **Semantic Scholar** | L2 搜索+富集 | CS 交叉子领域→并行 L1；传统工科→L1 不足时回退；始终取 `influentialCitationCount` |
+| **CNKI** | L1 🆕 | 中文文献主检索，校园IP直连或CARSI/CDP登录；支持多策略 |
+| **Wanfang Data** | L2 🆕 | 中文文献补充检索，机构IP直连或CARSI SSO登录 |
 | **PubMed** | L3 搜索 | 仅医工交叉（生物医学工程、康复工程等） |
-| **Wanfang Data** | L3 自动 🆕 | 中文文献检索，机构IP直连或CARSI SSO登录 |

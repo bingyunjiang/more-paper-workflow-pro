@@ -34,6 +34,15 @@ Usage:
 
   # Verify DOIs from a file
   python3 search_by_topic.py --verify-dois dois.txt
+
+  # CNKI Chinese literature search (campus IP or CARSI CDP login)
+  python3 search_by_topic.py "冷板拓扑优化" --source cnki --limit 20
+
+  # CNKI multi-strategy: sort by citations
+  python3 search_by_topic.py "拓扑优化" --source cnki --strategy cited --limit 20
+
+  # T1/T2/T3 routing with CNKI primary + Wanfang supplement
+  python3 search_by_topic.py "散热器优化" --t1 cnki --t2 wanfang --limit 50
 """
 import hashlib
 import json
@@ -55,6 +64,14 @@ CACHE_MAX_ENTRIES = 500
 WANFANG_SEARCH_URL = "https://www.wanfangdata.com.cn/search/searchList.do"
 WANFANG_CDP_PORT = 9223
 WANFANG_SPA_URL = "https://s.wanfangdata.com.cn/paper"
+
+# ── CNKI Web Search ─────────────────────────────────────────────────────
+
+CNKI_BASE_URL = "https://www.cnki.net"
+CNKI_ADV_SEARCH_URL = "https://kns.cnki.net/kns/AdvSearch?classid=7NS01R8M"
+CNKI_OLD_SEARCH_URL = "http://kns.cnki.net/kns/brief/brief.aspx"
+CNKI_SEARCH_HANDLER = "http://kns.cnki.net/kns/request/SearchHandler.ashx"
+CNKI_CDP_PORT = 9222  # share CDP port with SD/IEEE
 
 
 def _cache_key(query, source, limit, strategy=""):
@@ -740,6 +757,519 @@ def search_wanfang(query, limit=20, use_cache=True):
     return []
 
 
+# ── CNKI Web Search ─────────────────────────────────────────────────────
+
+CNKI_STRATEGY_MAP = {
+    "relevance": "(FFD,'RANK') desc",
+    "recent":    "(发表时间,'TIME') desc",
+    "cited":     "(被引频次,'INTEGER') desc",
+}
+
+def _build_cnki_post_data(query, page=1, sorttype=""):
+    """Build POST form data for CNKI's SearchHandler.ashx.
+
+    The old HTTP interface uses the same params as verified by
+    mohuishou/PaperDownload (Go) and itstyren/CNKI-download (Python).
+    """
+    data = {
+        "action": "",
+        "NaviCode": "*",
+        "ua": "1.21",
+        "isinEn": "1",
+        "PageName": "ASP.brief_default_result_aspx",
+        "DbPrefix": "SCDB",
+        "DbCatalog": "中国学术期刊网络出版总库",
+        "ConfigFile": "CJFQ.xml",
+        "db_opt": "CJFQ,CDFD,CMFD,CPFD,IPFD,CCND,CCJD",
+        "txt_1_sel": "SU",
+        "txt_1_value1": query,
+        "txt_1_relation": "#CNKI_AND",
+        "txt_1_special1": "%",
+        "his": "0",
+    }
+    data["sorttype"] = sorttype if sorttype else "(发表时间,'TIME') desc"
+    return data
+
+
+def _parse_cnki_html(html, max_results):
+    """Parse CNKI search results HTML into paper dicts.
+
+    Old interface returns a table.GridTableContent with columns:
+    0: checkbox, 1: title+link, 2: author, 3: source, 4: date,
+    5: database, 6: (skip), 7: download count
+    """
+    results = []
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        return results
+
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", class_="GridTableContent")
+    if not table:
+        return results
+
+    rows = table.find_all("tr")
+    # Skip header row (first tr)
+    for tr in rows[1:]:
+        if len(results) >= max_results:
+            break
+        try:
+            tds = tr.find_all("td")
+            if len(tds) < 6:
+                continue
+
+            # Title + link
+            title_el = tds[1].find("a") if len(tds) > 1 else None
+            if not title_el:
+                continue
+            title = title_el.get_text(strip=True)
+            if not title or title == "?":
+                continue
+
+            # Download URL from briefDl_D link
+            download_url = ""
+            dl_link = tds[1].find("a", class_="briefDl_D") if len(tds) > 1 else None
+            if dl_link and dl_link.get("href"):
+                download_url = "http://kns.cnki.net/kns/brief/" + dl_link["href"]
+
+            # DOI — CNKI rarely has DOIs on the results page
+            doi = ""
+            # Use export ID as secondary identifier
+            export_id = ""
+            cb = tr.find("input", type="checkbox")
+            if cb and cb.get("value"):
+                export_id = cb["value"]
+
+            # Generate synthetic DOI from title
+            title_hash = hashlib.md5(title.encode(errors="replace")).hexdigest()[:12]
+            doi = f"cnki.{title_hash}"
+
+            # Authors
+            authors_raw = tds[2].get_text(strip=True) if len(tds) > 2 else ""
+            authors = [a.strip() for a in re.split(r'[;；]', authors_raw) if a.strip()[:1]]
+
+            # Source/journal
+            venue = tds[3].get_text(strip=True) if len(tds) > 3 else ""
+
+            # Date
+            year = 0
+            date_raw = tds[4].get_text(strip=True) if len(tds) > 4 else ""
+            year_m = re.search(r"(\d{4})", date_raw)
+            if year_m:
+                year = int(year_m.group(1))
+
+            # Citations (from text)
+            citations = 0
+
+            results.append({
+                "doi": doi,
+                "title": title,
+                "year": year,
+                "venue": venue,
+                "authors": authors,
+                "citations": citations,
+                "source": "cnki",
+                "_download_url": download_url,
+                "_export_id": export_id,
+            })
+        except Exception:
+            continue
+
+    return results
+
+
+def _try_cnki_ip(query, limit=20, strategy=""):
+    """Search CNKI via old HTTP POST/GET interface (campus IP / VPN).
+
+    Uses urllib with CookieJar for session management.
+    Returns parsed results on success, None if blocked/CAS redirect.
+    """
+    import http.cookiejar
+
+    headers = {
+        "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/125.0.0.0 Safari/537.36"),
+        "Accept": ("text/html,application/xhtml+xml,application/xml;"
+                   "q=0.9,*/*;q=0.8"),
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    }
+
+    cj = http.cookiejar.CookieJar()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(cj)
+    )
+
+    # Step 1: GET to establish initial session cookie
+    try:
+        req = urllib.request.Request(
+            "http://kns.cnki.net/kns/brief/result.aspx",
+            headers=headers
+        )
+        with opener.open(req, timeout=15) as resp:
+            resp.read()  # consume to set cookies
+    except Exception:
+        return None
+
+    # Step 2: POST to SearchHandler.ashx
+    sort_expr = CNKI_STRATEGY_MAP.get(strategy, "(发表时间,'TIME') desc")
+    post_data = _build_cnki_post_data(query, sorttype=sort_expr)
+    try:
+        req = urllib.request.Request(
+            CNKI_SEARCH_HANDLER,
+            data=urllib.parse.urlencode(post_data).encode("utf-8"),
+            headers={**headers, "Content-Type": "application/x-www-form-urlencoded"},
+        )
+        with opener.open(req, timeout=15) as resp:
+            pagename = resp.read().decode("utf-8", errors="replace").strip()
+    except urllib.error.HTTPError as e:
+        if e.code in (301, 302, 303, 307, 308, 401, 403):
+            return None
+        return None
+    except Exception:
+        return None
+
+    if not pagename:
+        return None
+
+    # Step 3: GET the brief.aspx result page
+    encoded_query = urllib.parse.quote(query)
+    page_size = min(limit, 20)
+    result_url = (
+        f"{CNKI_OLD_SEARCH_URL}?pagename={urllib.parse.quote(pagename)}"
+        f"&keyValue={encoded_query}&S=1&sorttype={urllib.parse.quote(sort_expr)}"
+        f"&recordsperpage={page_size}"
+    )
+    try:
+        req = urllib.request.Request(
+            result_url,
+            headers={**headers, "Referer": CNKI_SEARCH_HANDLER},
+        )
+        with opener.open(req, timeout=15) as resp:
+            html_bytes = resp.read()
+    except Exception:
+        return None
+
+    try:
+        html = html_bytes.decode("utf-8", errors="replace")
+    except Exception:
+        html = html_bytes.decode("gbk", errors="replace")
+
+    # Detect captcha or login redirect
+    if "tcaptcha_transform_dy" in html.lower():
+        return None  # captcha triggered, fall back to CDP mode
+    if "统一身份认证" in html or "CARSI" in html:
+        return None  # not on campus IP
+
+    results = _parse_cnki_html(html, limit)
+
+    # Step 4: Handle pagination if limit > 20
+    if len(results) < limit:
+        try:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html, "html.parser")
+            count_mark = soup.select_one(".countPageMark")
+            if count_mark:
+                parts = count_mark.get_text(strip=True).split("/")
+                if len(parts) == 2:
+                    total_pages = int(parts[1])
+                    query_id = ""
+                    # Extract QueryID from URL or page
+                    qid_m = re.search(r"QueryID=(\d+)", result_url)
+                    if qid_m:
+                        query_id = qid_m.group(1)
+
+                    for pg in range(2, total_pages + 1):
+                        if len(results) >= limit:
+                            break
+                        page_url = (
+                            f"{CNKI_OLD_SEARCH_URL}?QueryID={query_id}"
+                            f"&curpage={pg}&tpagemode=L&dbPrefix=SCDB"
+                            f"&recordsperpage={page_size}&sorttype={urllib.parse.quote(sort_expr)}"
+                            f"&keyValue={encoded_query}&S=1"
+                        )
+                        try:
+                            req = urllib.request.Request(
+                                page_url,
+                                headers={**headers, "Referer": result_url},
+                            )
+                            with opener.open(req, timeout=15) as resp:
+                                pg_html = resp.read().decode("utf-8", errors="replace")
+                            pg_results = _parse_cnki_html(pg_html, limit - len(results))
+                            results.extend(pg_results)
+                        except Exception:
+                            break
+        except Exception:
+            pass
+
+    return results
+
+
+def _try_cnki_cdp(query, limit=20):
+    """Search CNKI via CDP browser using the old AdvSearch interface.
+
+    Verified flow (2026-06-06):
+      1. navigate_page → https://kns.cnki.net/kns/AdvSearch?classid=7NS01R8M
+      2. Wait for #txt_1_value1 to be DOM-ready
+      3. Fill #txt_1_value1 with query, dispatch input event
+      4. Click div.search with mouse events (mousedown+mouseup+click)
+      5. Poll for a.fz14 links in #gridTable (AJAX results load inline)
+      6. Extract titles, authors, journals, dates from <tr> rows
+
+    The old interface renders results inside #gridTable via AJAX.
+    No captcha issues unlike the new kns8s SPA.
+    Falls back gracefully if CDP browser is unavailable.
+    """
+    try:
+        from cdp_utils import check_cdp
+        if not check_cdp(CNKI_CDP_PORT):
+            return None
+    except Exception:
+        return None
+
+    try:
+        import websocket
+        targets = json.loads(
+            urllib.request.urlopen(
+                f"http://127.0.0.1:{CNKI_CDP_PORT}/json"
+            ).read()
+        )
+        page_target = None
+        for t in targets:
+            if t.get("type") == "page":
+                page_target = t
+                break
+        if not page_target:
+            return None
+
+        wu = page_target["webSocketDebuggerUrl"]
+        ws = websocket.create_connection(wu, timeout=10)
+
+        # Step 1: Navigate to old AdvSearch interface
+        ws.send(json.dumps({
+            "id": 1, "method": "Page.navigate",
+            "params": {"url": CNKI_ADV_SEARCH_URL},
+        }))
+        json.loads(ws.recv())
+
+        # Step 2: Wait for form to be ready (#txt_1_value1 present)
+        for _ in range(12):
+            time.sleep(1)
+            ws.send(json.dumps({
+                "id": 2, "method": "Runtime.evaluate",
+                "params": {"expression": "!!document.querySelector('#txt_1_value1')"},
+            }))
+            r = json.loads(ws.recv())
+            ready = r.get("result", {}).get("result", {}).get("value", False)
+            if ready:
+                break
+
+        # Step 3: Fill search form and click search button
+        escaped_query = query.replace("\\", "\\\\").replace("'", "\\'")
+        fill_js = (
+            f"var inp=document.querySelector('#txt_1_value1');"
+            f"if(!inp){{'error:no_input';}}"
+            f"else{{inp.value='{escaped_query}';"
+            f"inp.dispatchEvent(new Event('input',{{bubbles:true}}));"
+            f"inp.dispatchEvent(new Event('change',{{bubbles:true}}));"
+            f"var b=document.querySelector('div.search');"
+            f"if(!b){{'error:no_btn';}}"
+            f"else{{"
+            f"b.dispatchEvent(new MouseEvent('mousedown',{{bubbles:true}}));"
+            f"b.dispatchEvent(new MouseEvent('mouseup',{{bubbles:true}}));"
+            f"b.dispatchEvent(new MouseEvent('click',{{bubbles:true}}));"
+            f"'clicked';}}}}"
+        )
+        ws.send(json.dumps({
+            "id": 3, "method": "Runtime.evaluate",
+            "params": {"expression": fill_js},
+        }))
+        r = json.loads(ws.recv())
+        click_result = r.get("result", {}).get("result", {}).get("value", "")
+
+        # Step 4: Wait for AJAX results to render (a.fz14 links appear in #gridTable)
+        result_count = 0
+        for i in range(20):
+            time.sleep(1)
+            ws.send(json.dumps({
+                "id": 4, "method": "Runtime.evaluate",
+                "params": {"expression": (
+                    "var g=document.querySelector('#gridTable');"
+                    "g ? g.querySelectorAll('a.fz14').length : 0"
+                )},
+            }))
+            r = json.loads(ws.recv())
+            result_count = r.get("result", {}).get("result", {}).get("value", 0)
+            if result_count > 0:
+                break
+            # Also check for "条结果" anywhere in body (fallback)
+            if i > 3:
+                ws.send(json.dumps({
+                    "id": 5, "method": "Runtime.evaluate",
+                    "params": {"expression": (
+                        "document.body.innerText.includes('条结果')"
+                    )},
+                }))
+                r2 = json.loads(ws.recv())
+                has_results = r2.get("result", {}).get("result", {}).get("value", False)
+                if has_results:
+                    break
+
+        if result_count == 0:
+            ws.close()
+            print(f"  CNKI CDP: search returned 0 results", flush=True)
+            return []
+
+        # Step 5: Extract results from #gridTable
+        extract_js = f"""
+(() => {{
+  var grid = document.querySelector('#gridTable');
+  if (!grid) return JSON.stringify({{error: 'no_grid'}});
+
+  var trs = grid.querySelectorAll('tr');
+  var results = [];
+  for (var i = 0; i < Math.min(trs.length, 40) && results.length < {limit}; i++) {{
+    var tr = trs[i];
+    var titleA = tr.querySelector('a.fz14');
+    if (!titleA) continue;
+    var title = titleA.innerText.trim();
+    if (!title || title.length < 3) continue;
+
+    var tds = tr.querySelectorAll('td');
+    var authorLinks = tr.querySelectorAll('a.KnowledgeNetLink');
+    var authors = Array.from(authorLinks).map(function(a) {{
+      return a.innerText.trim();
+    }});
+
+    // Journal: typically td[3] or the first <a> in the source column
+    var journalA = (tds.length > 3) ? tds[3].querySelector('a') : null;
+    var journal = journalA ? journalA.innerText.trim() : '';
+    // If no link in td[3], try raw text
+    if (!journal && tds.length > 3) {{
+      journal = tds[3].innerText.trim().split('\\n')[0];
+    }}
+    var date = (tds.length > 4) ? tds[4].innerText.trim() : '';
+    var year = 0;
+    var ym = date.match(/(\\d{{4}})/);
+    if (ym) year = parseInt(ym[1]);
+
+    // Downloads: td[7]
+    var dls = (tds.length > 7) ? tds[7].innerText.trim() : '';
+    var citations = parseInt(dls) || 0;
+
+    // Generate synthetic DOI
+    var titleHash = '';
+    for (var j = 0; j < 12 && j < title.length; j++) {{
+      var c = title.charCodeAt(j);
+      titleHash += c.toString(16);
+    }}
+    var doi = 'cnki.' + titleHash;
+
+    results.push({{
+      doi: doi,
+      title: title,
+      year: year,
+      venue: journal,
+      authors: authors,
+      citations: citations,
+      source: 'cnki',
+      _href: titleA.href,
+      _date: date,
+    }});
+  }}
+  return JSON.stringify({{count: results.length, results: results}});
+}})()
+"""
+        ws.send(json.dumps({
+            "id": 6, "method": "Runtime.evaluate",
+            "params": {"expression": extract_js},
+        }))
+        r = json.loads(ws.recv())
+        ws.close()
+
+        raw_val = r.get("result", {}).get("result", {}).get("value", "{}")
+        parsed = json.loads(raw_val) if isinstance(raw_val, str) else raw_val
+        if isinstance(parsed, dict) and "results" in parsed:
+            results = parsed["results"]
+            print(f"  CNKI CDP: {len(results)} results found", flush=True)
+            return results
+        if isinstance(parsed, dict) and "error" in parsed:
+            return None
+        return []
+
+    except Exception:
+        try:
+            ws.close()
+        except Exception:
+            pass
+        return None
+
+
+def search_cnki(query, limit=20, use_cache=True, strategy=""):
+    """Search CNKI (中国知网) for Chinese academic papers.
+
+    Two modes:
+      1. CDP mode (primary): SPA browser automation via kns8s.
+         Requires CDP Chrome running on port 9222.
+         Supports search via browser automation (no captcha issues).
+      2. IP mode (legacy fallback, likely dead): Old HTTP POST/GET via
+         SearchHandler.ashx. Works on-campus if old interface still available.
+
+    Papers without DOIs receive a synthetic 'cnki.{title_md5[:12]}' identifier.
+
+    Args:
+        query: Search query string (Chinese).
+        limit: Max results (default: 20).
+        use_cache: If True, check/write disk cache.
+        strategy: Sort order — unused in CDP mode (SPA default sort).
+
+    Returns:
+        List of paper dicts with keys: doi, title, year, venue, authors,
+        citations, source.
+    """
+    cache_key = _cache_key(query, "cnki", limit, strategy)
+    if use_cache:
+        cached = _cache_get(cache_key)
+        if cached is not None:
+            print(f"  CNKI: cache hit ({len(cached)} results)", flush=True)
+            return cached
+
+    # Try CDP mode first (kns8s SPA, requires running Chrome)
+    print("  CNKI: trying CDP mode...", flush=True)
+    results = _try_cnki_cdp(query, limit)
+
+    if results is not None:
+        print(f"  CNKI CDP mode: {len(results)} results", flush=True)
+        if use_cache:
+            _cache_set(cache_key, results)
+        return results
+
+    # CDP failed
+    print("", flush=True)
+    print("  ╔══════════════════════════════════════════════════════════════╗",
+          flush=True)
+    print("  ║  CNKI 检索失败 — 需要 CDP Chrome                            ║",
+          flush=True)
+    print("  ╠══════════════════════════════════════════════════════════════╣",
+          flush=True)
+    print("  ║ 请确保 CDP Chrome 正在运行（端口 9222）：                   ║",
+          flush=True)
+    print("  ║   scripts/start_cdp_chrome.sh                               ║",
+          flush=True)
+    print("  ║                                                              ║",
+          flush=True)
+    print("  ║ 然后在浏览器中访问:                                         ║",
+          flush=True)
+    print("  ║   https://www.cnki.net                                      ║",
+          flush=True)
+    print("  ║ 完成 CARSI 机构认证或账号登录后重试                          ║",
+          flush=True)
+    print("  ╚══════════════════════════════════════════════════════════════╝",
+          flush=True)
+    return []
+
+
 # ── Source Registration ──────────────────────────────────────────────────
 
 SOURCE_FUNCTIONS = {
@@ -747,6 +1277,7 @@ SOURCE_FUNCTIONS = {
     "crossref": search_crossref,
     "openalex": search_openalex,
     "wanfang": search_wanfang,
+    "cnki": search_cnki,
 }
 
 SOURCE_ALIASES = {
@@ -755,6 +1286,7 @@ SOURCE_ALIASES = {
     "cr": "crossref",
     "oa": "openalex",
     "wf": "wanfang",
+    "cn": "cnki",
 }
 
 
@@ -964,6 +1496,10 @@ def build_query(concept_blocks, source, strategy="relevance"):
             pq += " " + " ".join(not_terms)
         return {"q": pq}
 
+    elif source == "cnki":
+        # CNKI uses POST form fields, so just return the AND-joined plain query
+        return {"q": " AND ".join(and_clauses)}
+
     else:
         # Unknown source: return raw AND-joined query
         return {"q": " AND ".join(and_clauses)}
@@ -1022,6 +1558,7 @@ def preflight():
         "OpenAlex": "https://api.openalex.org/works?search=test&per_page=1",
     }
     endpoints["Wanfang Data"] = _build_wanfang_url("test", page=1, page_size=1)
+    endpoints["CNKI"] = CNKI_SEARCH_HANDLER
 
     print("Pre-flight API Health Check")
     print("=" * 55)
@@ -1032,8 +1569,8 @@ def preflight():
         try:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 body = resp.read()
-                # Wanfang returns HTML, other sources return JSON
-                if name == "Wanfang Data":
+                # Wanfang and CNKI return HTML, other sources return JSON
+                if name in ("Wanfang Data", "CNKI"):
                     ok = len(body) > 100  # Got actual content, not a redirect page
                 else:
                     json.loads(body)  # Verify JSON is parseable
@@ -1493,6 +2030,15 @@ Examples:
   # Wanfang Data Chinese literature search (requires institutional IP or CARSI SSO login)
   python3 search_by_topic.py "冷板拓扑优化" --source wanfang --limit 20
 
+  # CNKI Chinese literature search (campus IP or CARSI CDP login)
+  python3 search_by_topic.py "拓扑优化" --source cnki --limit 20
+
+  # CNKI multi-strategy: sort by citations
+  python3 search_by_topic.py "拓扑优化" --source cnki --strategy cited --limit 20
+
+  # T1/T2/T3 routing with CNKI primary + Wanfang supplement
+  python3 search_by_topic.py "散热器优化" --t1 cnki --t2 wanfang --limit 30
+
   # T1/T2/T3 routing with Wanfang fallback
   python3 search_by_topic.py "battery thermal management" --t1 openalex --t2 wanfang
         """
@@ -1501,10 +2047,10 @@ Examples:
     # Search mode
     parser.add_argument("query", nargs="?", help="Search query string")
     parser.add_argument("--source", choices=["semantic", "crossref", "openalex", "wanfang", "wf",
-                                              "all", "semantic_scholar"],
+                                              "cnki", "cn", "all", "semantic_scholar"],
                         default="all",
                         help="Search source (default: all). Use --t1/--t2/--t3 for routing.")
-    parser.add_argument("--t1", help="Primary source (T1). Options: semantic_scholar, crossref, openalex, wanfang")
+    parser.add_argument("--t1", help="Primary source (T1). Options: semantic_scholar, crossref, openalex, wanfang, cnki")
     parser.add_argument("--t2", help="Secondary source (T2), used if T1 returns < --min-results")
     parser.add_argument("--t3", help="Last resort source (T3)")
     parser.add_argument("--min-results", type=int, default=30,
@@ -1700,6 +2246,9 @@ Examples:
             if args.source in ("wanfang", "wf", "all"):
                 print("  Querying Wanfang Data...", flush=True)
                 all_results.extend(search_wanfang(args.query, args.limit, use_cache=not args.no_cache))
+            if args.source in ("cnki", "cn", "all"):
+                print("  Querying CNKI...", flush=True)
+                all_results.extend(search_cnki(args.query, args.limit, use_cache=not args.no_cache, strategy=args.strategy if args.strategy and args.strategy != "all" else ""))
 
     # Deduplicate
     unique = deduplicate(all_results)

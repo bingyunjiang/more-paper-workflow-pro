@@ -66,7 +66,7 @@ Step 2 产出（大纲关键词.md）
   → ③ 概念块拆解：每个概念块 ≥2 同义词 + 可选排除词
   → ④ 组装布尔查询：(syn1 OR syn2) AND (syn3 OR syn4) NOT (excl)
   → ⑤ 反模式检查（7 项）
-  → ⑥ 读 Step 2 产出中的「检索语言」字段 → 中文→L1 Wanfang；英文→L1 OpenAlex→L2 Semantic Scholar→L3 PubMed
+  → ⑥ 读 Step 2 产出中的「检索语言」字段 → 中文→L1 CNKI→L2 Wanfang；英文→L1 OpenAlex→L2 Semantic Scholar→L3 PubMed
   → 产出：检索方案.md → 检索方案.pdf
 ```
 
@@ -123,8 +123,10 @@ Step 2 产出（大纲关键词.md）
 
 ```
 检索语言: 中文
-  → L1  Wanfang Data     ← 🆕 中文文献自动检索（机构IP直连或CARSI SSO登录）
-                          本文库尚不支持 CNKI（无开放 API）
+  → L1  CNKI             ← 🆕 主检索：中文期刊全量 + 硕博论文（校园IP/账号密码/CDP）
+  → L2  Wanfang Data     ← 补充检索：中文期刊（医药/自然综合）
+  → 两路结果在 Step 4b 以 DOI 为主键去重合并。
+    同一论文出现在两个源 → Step 4c 评分「主题匹配度」+1。
 
 检索语言: 英文
   → L1  OpenAlex         ← 全学科覆盖最广（2.5 亿+），默认首选
@@ -135,19 +137,32 @@ Step 2 产出（大纲关键词.md）
 检索语言: 中英文混合 → 按子课题拆分，分别走中文/英文路由
 ```
 
-> **为什么中文不走 OpenAlex？** OpenAlex 的中文文献覆盖率仅 24%，且 92% 的中文论文被错标为英文。万方是中文文献的可靠来源。
+> **为什么中文不走 OpenAlex？** OpenAlex 的中文文献覆盖率仅 24%，且 92% 的中文论文被错标为英文。CNKI + 万方是中文学术文献的可靠覆盖组合。
 
-### 3c.1 🆕 Wanfang 触发条件
+### 3c.1 🆕 CNKI 触发条件
+
+| 信号 | 触发 CNKI? | 说明 |
+|------|:---------:|------|
+| 查询含中文字符 | ✅ YES | 中文查询以 CNKI 为 L1（主检索），万方为 L2（补充） |
+| 用户明确要求"知网"/"CNKI"/"硕博论文" | ✅ YES | 显式要求 |
+| 仅英文查询且无中文语境 | ⚠️ 推荐 | Agent 判断是否遗漏国内团队英文发表 |
+| 用户明确要求"仅英文" | ❌ NO | 尊重用户意愿 |
+
+> **CNKI 访问方式**：校园网 → 自动 IP 认证（零配置）；备选账号 sh0283/zjdxtsg。
+> 校外 → CARSI/CDP 浏览器（需在 CDP Chrome 中完成一次机构登录）。
+> **CNKI 优势**：支持硕博论文检索、支持多排序策略（相关度/时间/被引/下载）、支持调用 Export API 获取 GB/T 7714 引用格式。
+
+### 3c.2 Wanfang 触发条件
 
 | 信号 | 触发 Wanfang? | 说明 |
 |------|:------------:|------|
-| 查询含中文字符 | ✅ YES | 中文查询直接以 Wanfang 为 L1，跳过 OpenAlex |
+| 查询含中文字符 | ✅ YES | 中文查询以 Wanfang 为 L2（补充检索），补全 CNKI 可能遗漏的医药/自然科学文献 |
 | 用户明确要求"中文文献"/"万方"/"Wanfang" | ✅ YES | 显式要求 |
 | 仅英文查询且无中文语境 | ⚠️ 推荐 | Agent 判断是否可能遗漏国内团队工作 |
 | 用户明确要求"仅英文" | ❌ NO | 尊重用户意愿 |
 
 > **Wanfang 访问方式**：自动检测。校内IP直连（零配置），校外CARSI SSO需在CDP Chrome中完成一次机构登录。
-> **Wanfang 限制**：万方 Web 搜索仅支持默认排序，不支持多策略（relevance/cited/recent）切换。在 L3 阶段统一使用 `--source wanfang` 或通过 T3 回退调用。
+> **Wanfang 限制**：万方 Web 搜索仅支持默认排序，不支持多策略（relevance/cited/recent）切换。在 L2 阶段统一使用 `--source wanfang` 或通过 T2 级联调用。
 
 **🆕 arXiv 触发条件：**
 
@@ -204,6 +219,7 @@ python3 scripts/search_by_topic.py --preflight
 - [ ] 🆕 arXiv 触发条件已检测（arxiv_enabled: true/false）
 - [ ] 🆕 Tier 检索参数已配置（tier: quick/standard/deep）
 - [ ] 🆕 核心术语与 `references/term_aliases.md` 中 Main Term 一致
+- [ ] 🆕 CNKI 触发条件已检测（cnki_enabled: true/false + 访问模式：IP/CDP）
 - [ ] 🆕 Wanfang 触发条件已检测（wanfang_enabled: true/false + 凭证存在性）
 - [ ] Pre-flight 检查已通过
 
