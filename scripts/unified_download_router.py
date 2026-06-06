@@ -27,7 +27,7 @@ Usage:
 
 from __future__ import annotations
 
-import sys, os, time, re, json, argparse, subprocess
+import sys, os, time, re, json, argparse, subprocess, hashlib
 from pathlib import Path
 from datetime import datetime
 
@@ -48,7 +48,14 @@ DEFAULT_OUTPUT = "paper-temp"
 SCI_HUB_CUTOFF_YEAR = 2021  # Sci-Hub has very few papers after 2020
 
 # Strategy routing table (for display and decisions)
-STRATEGY_ORDER = ["scihub", "sd_cdp", "ieee_cdp", "generic", "direct_http", "skip"]
+STRATEGY_ORDER = ["scihub", "sd_cdp", "ieee_cdp", "generic", "chinese_cdp", "direct_http", "skip"]
+
+# Chinese CDP publishers (identified by strategy, not DOI prefix)
+CHINESE_PUBLISHERS = {"cnki", "wanfang"}
+
+# Chinese paper entry schema (from literature table or JSON)
+# Each entry: {"title": str, "source": "cnki"|"wanfang", "article_url": str, "doi": str}
+CHINESE_PAPER_FIELDS = frozenset({"title", "source", "article_url"})
 
 
 # ── Year Estimation ─────────────────────────────────────────────────────────
@@ -114,6 +121,129 @@ def parse_input(input_path: str) -> list[str]:
         print(f"ERROR: No DOIs found in {input_path}")
         sys.exit(1)
     return dois
+
+
+# ── Chinese Paper Parsing ────────────────────────────────────────────────────
+
+def parse_chinese_papers(input_path: str) -> list[dict]:
+    """Extract Chinese papers (CNKI/Wanfang) from literature table or JSON.
+
+    For Markdown literature tables, reads rows where the source column
+    is 'cnki' or 'wanfang'. Extracts title, DOI/synthetic-ID, and
+    any article URL present.
+
+    For JSON files, expects:
+      [{"title": "...", "source": "cnki"|"wanfang",
+        "article_url": "https://...", "doi": "10.xxxx/..."}, ...]
+
+    Returns list of {title, source, article_url, doi} dicts.
+    """
+    path = Path(input_path)
+    if not path.exists():
+        print(f"ERROR: Chinese input file not found: {input_path}")
+        sys.exit(1)
+
+    text = path.read_text(encoding="utf-8", errors="replace")
+
+    # Try JSON first
+    stripped = text.strip()
+    if stripped.startswith("[") or stripped.startswith("{"):
+        try:
+            data = json.loads(stripped)
+            if isinstance(data, dict) and "papers" in data:
+                data = data["papers"]
+            if not isinstance(data, list):
+                print("ERROR: Chinese JSON must be a list of paper objects.")
+                sys.exit(1)
+            papers = []
+            for item in data:
+                if isinstance(item, dict) and item.get("source", "").lower() in ("cnki", "wanfang"):
+                    papers.append({
+                        "title": item.get("title", ""),
+                        "source": item["source"].lower(),
+                        "article_url": item.get("article_url", item.get("url", "")),
+                        "doi": item.get("doi", ""),
+                    })
+            return papers
+        except json.JSONDecodeError:
+            pass  # Not JSON, fall through to Markdown parsing
+
+    # Markdown table parsing
+    papers = []
+    in_table = False
+    headers: list[str] = []
+    source_col = -1
+    title_col = -1
+    doi_col = -1
+    url_col = -1
+
+    for line in text.split("\n"):
+        # Detect table header row
+        if "|" in line and not in_table:
+            parts = [p.strip() for p in line.split("|")]
+            # Skip separator lines (|---|---|)
+            if all(re.match(r'^[-:]+$', p) for p in parts if p):
+                continue
+            headers = parts
+            # Find column indices (case-insensitive)
+            for i, h in enumerate(headers):
+                hl = h.lower()
+                if hl in ("来源", "source"):
+                    source_col = i
+                elif hl in ("标题", "title", "论文标题"):
+                    title_col = i
+                elif hl in ("doi", "doi/url"):
+                    doi_col = i
+                elif hl in ("文章链接", "url", "article_url", "详情链接"):
+                    url_col = i
+            if source_col >= 0:
+                in_table = True
+            continue
+
+        if not in_table:
+            continue
+
+        # End of table: blank line or new heading
+        if not line.strip() or line.startswith("##"):
+            in_table = False
+            continue
+
+        # Skip separator lines inside table
+        parts = [p.strip() for p in line.split("|")]
+        if all(re.match(r'^[-:]+$', p) for p in parts if p):
+            continue
+
+        if source_col >= len(parts):
+            continue
+
+        source_val = parts[source_col].strip().lower()
+        if source_val not in ("cnki", "wanfang"):
+            continue
+
+        title = parts[title_col].strip() if 0 <= title_col < len(parts) else ""
+        # Clean markdown link formatting from title
+        title = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', title)
+
+        doi = parts[doi_col].strip() if 0 <= doi_col < len(parts) else ""
+        # Extract DOI from markdown link if present
+        doi_m = re.search(r'(10\.\d{4,}/[^\s<")]+|cnki\.\w+|wanfang\.\w+)', doi)
+        doi = doi_m.group(1) if doi_m else doi
+
+        article_url = parts[url_col].strip() if 0 <= url_col < len(parts) else ""
+        # Extract URL from markdown link
+        url_m = re.search(r'\]\(([^)]+)\)', article_url) or re.search(r'(https?://[^\s)]+)', article_url)
+        if url_m and not article_url.startswith("http"):
+            article_url = url_m.group(1)
+
+        if title:
+            papers.append({
+                "title": title,
+                "source": source_val,
+                "article_url": article_url,
+                "doi": doi,
+            })
+
+    return papers
 
 
 # ── Round Executors ─────────────────────────────────────────────────────────
@@ -403,6 +533,183 @@ def run_generic_round(dois: list[str], output_dir: str, port: int,
     return downloaded, remaining
 
 
+# ── Chinese Round ────────────────────────────────────────────────────────────
+
+def run_chinese_round(papers: list[dict], output_dir: str, port: int) -> tuple[list[str], list[str]]:
+    """Chinese CDP download round for CNKI and Wanfang papers.
+
+    Each paper dict must have: title, source (cnki|wanfang), article_url.
+    Uses the generic_publisher_downloader engine with publisher override
+    set to the matching Chinese publisher config.
+
+    Args:
+        papers: List of {title, source, article_url, doi} dicts.
+        output_dir: Directory to save downloaded PDFs.
+        port: CDP Chrome debug port.
+
+    Returns: (downloaded_dois, remaining_dois).
+    """
+    if not papers:
+        print(f"\n⏭ Chinese Round: No Chinese papers to download.")
+        return [], []
+
+    print(f"\n{'='*60}")
+    print(f"Chinese Round: CNKI / Wanfang CDP ({len(papers)} papers)")
+    print(f"{'='*60}")
+
+    # Map source name to publisher config key
+    source_to_pub = {"cnki": "cnki", "wanfang": "wanfang"}
+
+    ok, fail, skipped = 0, 0, 0
+    downloaded = []
+    remaining = []
+
+    for i, paper in enumerate(papers):
+        title = paper.get("title", f"paper_{i+1}")
+        source = paper.get("source", "").lower()
+        article_url = paper.get("article_url", "")
+        doi = paper.get("doi", "")
+
+        # Shorten title for display
+        display_title = title[:45] + ("..." if len(title) > 45 else "")
+
+        print(f"  [{i+1}/{len(papers)}] [{source.upper():6s}] {display_title}", end=" ", flush=True)
+
+        if not article_url:
+            print("❌ (no article URL — cannot download)")
+            remaining.append(doi or title)
+            skipped += 1
+            continue
+
+        t0 = time.time()
+
+        # Override publisher resolution: map source to Chinese publisher config
+        pub_key = source_to_pub.get(source, source)
+        publisher = resolve_publisher(doi) if doi else None
+        if publisher is None or publisher.get("strategy") != "chinese_cdp":
+            # Force publisher to Chinese config
+            from generic_publisher_downloader import _PUBLISHER_CONFIGS
+            publisher = _PUBLISHER_CONFIGS.get(pub_key, {"strategy": "chinese_cdp", "_key": pub_key})
+
+        result_path, status, _ = generic_download_one(
+            port, doi or f"{source}.{hashlib.md5(title.encode()).hexdigest()[:12]}",
+            output_dir, article_url=article_url
+        )
+        elapsed = time.time() - t0
+
+        if result_path and status == "ok":
+            size_kb = os.path.getsize(result_path) // 1024
+            print(f"✅ ({size_kb}KB, {elapsed:.1f}s)")
+            downloaded.append(doi or title)
+            ok += 1
+        elif status == "no_url":
+            print(f"❌ (no article URL)")
+            remaining.append(doi or title)
+            skipped += 1
+        else:
+            print(f"❌ ({elapsed:.1f}s)")
+            remaining.append(doi or title)
+            fail += 1
+
+    print(f"  Chinese result: ✅ {ok} downloaded, ❌ {fail} failed, ⏭ {skipped} skipped (no URL)")
+
+    return downloaded, remaining
+
+
+# ── English Pipeline (R1→R2→R3 sequential) ─────────────────────────────────
+
+def run_english_pipeline(dois: list[str], output_dir: str, port: int,
+                         skip_scihub: bool = False, skip_sd: bool = False,
+                         include_si: bool = False) -> tuple[list[str], list[str], list[dict]]:
+    """Run English download pipeline: R1 Sci-Hub → R2 SD CDP → R3 Generic CDP.
+
+    Designed to be called in parallel with run_chinese_round() via
+    ThreadPoolExecutor, sharing the same CDP port.
+
+    Args:
+        dois: List of DOIs to download.
+        output_dir: Directory to save PDFs.
+        port: CDP Chrome debug port.
+        skip_scihub: Skip Sci-Hub round.
+        skip_sd: Skip ScienceDirect round.
+        include_si: Download supplementary info where available.
+
+    Returns:
+        (downloaded, remaining, round_results) tuple.
+    """
+    all_downloaded: list[str] = []
+    round_results: list[dict] = []
+    remaining = list(dois)
+
+    # Round 1: Sci-Hub
+    if not skip_scihub:
+        downloaded, remaining = run_scihub_round(remaining, output_dir, port)
+        all_downloaded.extend(downloaded)
+        round_results.append({"round": "Sci-Hub", "downloaded": downloaded})
+    else:
+        print(f"\n⏭ Round 1 (Sci-Hub): Skipped (--skip-scihub)")
+
+    if not remaining:
+        print(f"\n🎉 English pipeline complete — all {len(all_downloaded)}/{len(dois)} downloaded!")
+        return all_downloaded, remaining, round_results
+
+    # Round 2: ScienceDirect CDP
+    if not skip_sd:
+        downloaded, remaining = run_sd_round(remaining, output_dir, port)
+        all_downloaded.extend(downloaded)
+        round_results.append({"round": "SD CDP", "downloaded": downloaded})
+    else:
+        print(f"\n⏭ Round 2 (SD CDP): Skipped (--skip-sd)")
+
+    if not remaining:
+        print(f"\n🎉 English pipeline complete — all {len(all_downloaded)}/{len(dois)} downloaded!")
+        return all_downloaded, remaining, round_results
+
+    # Round 3: Generic CDP (IEEE included here via strategy="generic")
+    downloaded, remaining = run_generic_round(
+        remaining, output_dir, port, include_si=include_si
+    )
+    all_downloaded.extend(downloaded)
+    round_results.append({"round": "Generic CDP", "downloaded": downloaded})
+
+    print(f"\n🎉 English pipeline complete — ✅ {len(all_downloaded)}/{len(dois)}, ❌ {len(remaining)} remaining")
+    return all_downloaded, remaining, round_results
+
+
+def run_english_cdp(dois: list[str], output_dir: str, port: int,
+                    skip_sd: bool = False, include_si: bool = False
+                    ) -> tuple[list[str], list[str], list[dict]]:
+    """Run English CDP-only pipeline: R2 SD CDP → R3 Generic CDP. No Sci-Hub.
+
+    Designed to run AFTER English login gate in Phase 2.
+    """
+    all_downloaded: list[str] = []
+    round_results: list[dict] = []
+    remaining = list(dois)
+
+    # R2: ScienceDirect CDP
+    if not skip_sd:
+        downloaded, remaining = run_sd_round(remaining, output_dir, port)
+        all_downloaded.extend(downloaded)
+        round_results.append({"round": "SD CDP", "downloaded": downloaded})
+    else:
+        print(f"\n⏭ R2 (SD CDP): Skipped (--skip-sd)")
+
+    if not remaining:
+        print(f"\n🎉 English CDP complete — all {len(all_downloaded)}/{len(dois)} downloaded!")
+        return all_downloaded, remaining, round_results
+
+    # R3: Generic CDP
+    downloaded, remaining = run_generic_round(
+        remaining, output_dir, port, include_si=include_si
+    )
+    all_downloaded.extend(downloaded)
+    round_results.append({"round": "Generic CDP", "downloaded": downloaded})
+
+    print(f"\n🎉 English CDP complete — ✅ {len(all_downloaded)}/{len(dois)}, ❌ {len(remaining)} remaining")
+    return all_downloaded, remaining, round_results
+
+
 # ── Download Log ────────────────────────────────────────────────────────────
 
 def generate_download_log(output_dir: str, all_dois: list[str],
@@ -465,6 +772,119 @@ def generate_download_log(output_dir: str, all_dois: list[str],
     return log_path
 
 
+# ── Login Gates ──────────────────────────────────────────────────────────────
+
+# Publishers that typically require institutional login for CDP download.
+# OA publishers (direct_http strategy) are excluded.
+# Sci-Hub and Chinese publishers are handled separately.
+ENGLISH_LOGIN_STRATEGIES = {"sd_cdp", "generic"}
+
+
+def show_chinese_login_gate(chinese_papers: list[dict]) -> bool:
+    """Display Chinese (CNKI/Wanfang) login gate. Returns True if confirmed."""
+    if not chinese_papers:
+        return True
+    from generic_publisher_downloader import _PUBLISHER_CONFIGS
+
+    pubs: list[str] = []
+    for paper in chinese_papers:
+        source = paper.get("source", "").lower()
+        if source in ("cnki", "wanfang"):
+            cfg = _PUBLISHER_CONFIGS.get(source, {})
+            domain = cfg.get("publisher_domain", "?")
+            pubs.append(f"  • {source} ({domain})")
+    if not pubs:
+        return True
+
+    print(f"\n{'='*60}")
+    print(f"🚧 Chinese Login Gate — CNKI / Wanfang")
+    print(f"{'='*60}")
+    print()
+    print("Please verify CNKI/Wanfang login in the CDP browser:")
+    print()
+    for p in sorted(set(pubs)):
+        print(p)
+    print()
+    print("  CNKI:  https://kns.cnki.net/")
+    print("  Wanfang: https://www.wanfangdata.com.cn/")
+    print()
+    try:
+        resp = input("Type '已登录' to proceed, 'q' to skip Chinese: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print("\n⏹ Skipping Chinese download.")
+        return False
+    if resp in ("已登录", "y", "yes", "done", "继续", "go"):
+        print("✅ Chinese login confirmed — starting CNKI/Wanfang CDP.\n")
+        return True
+    print("⏭ Skipping Chinese download.\n")
+    return False
+
+
+def show_english_login_gate(dois: list[str], skip_sd: bool = False) -> bool:
+    """Display English publisher login gate for remaining CDP papers.
+
+    Only triggers for papers needing sd_cdp or generic strategy.
+    Sci-Hub and Chinese are excluded (handled separately).
+    Returns True if confirmed, False to abort English CDP.
+    """
+    # Classify remaining DOIs to find CDP-dependent publishers
+    login_publishers: dict[str, set[str]] = {}  # strategy → set of publisher keys
+    seen = set()
+
+    for doi in dois:
+        c = classify_doi(doi)
+        strategy = c["strategy"]
+        if strategy not in ENGLISH_LOGIN_STRATEGIES:
+            continue
+        if strategy == "sd_cdp" and skip_sd:
+            continue
+        pub_key = c["publisher"]
+        pub_config = c.get("publisher_config", {})
+        domain = pub_config.get("publisher_domain", "?") if pub_config else "?"
+        if pub_key not in seen:
+            seen.add(pub_key)
+            login_publishers.setdefault(strategy, set()).add(f"{pub_key} ({domain})")
+
+    if not login_publishers:
+        print("\n✅ No English publishers requiring institutional login.")
+        return True
+
+    print(f"\n{'='*60}")
+    print(f"🚧 English Login Gate — Institutional Access Required")
+    print(f"{'='*60}")
+    print()
+    print("The following publishers require institutional login before download:")
+    print()
+    for strategy, pubs in sorted(login_publishers.items()):
+        label = {"sd_cdp": "ScienceDirect CDP", "generic": "Generic CDP"}.get(strategy, strategy)
+        print(f"  [{label}]")
+        for p in sorted(pubs):
+            print(f"    • {p}")
+        print()
+    print("Please complete these steps BEFORE continuing:")
+    print()
+    print("  1. Open CDP Chrome at http://127.0.0.1:9223")
+    print("  2. Navigate to each publisher's homepage (domains listed above)")
+    print("  3. Complete institutional SSO login for each publisher")
+    print("  4. Verify the login persists (check for 'Access provided by...' badges)")
+    print()
+    print(f"{'='*60}")
+    try:
+        resp = input("\nType '已登录' to proceed, 'q' to skip English CDP: ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print("\n\n⏹ English CDP skipped.")
+        return False
+    if resp in ("已登录", "y", "yes", "done", "logged in", "继续", "go"):
+        print("✅ Login confirmed — proceeding with English CDP.\n")
+        return True
+    elif resp in ("q", "quit", "exit", "n", "no"):
+        print("⏭ English CDP skipped by user.")
+        return False
+    else:
+        print(f"⚠ Unrecognized response — proceeding (Ctrl+C to abort).\n")
+        return True
+
+
 # ── Session Check ───────────────────────────────────────────────────────────
 
 def check_all_sessions(port: int):
@@ -506,6 +926,12 @@ def main():
     parser.add_argument("--skip-ieee", action="store_true", help="Skip IEEE round")
     parser.add_argument("--include-si", action="store_true", help="Download supplementary info where available")
     parser.add_argument("--dry-run", action="store_true", help="Show routing decisions without downloading")
+    parser.add_argument("--require-login-confirm", action="store_true",
+                        help="Pause before CDP rounds to prompt user to complete institutional login")
+    parser.add_argument("--chinese-input", help="Chinese papers input: JSON file or Markdown literature table")
+    parser.add_argument("--skip-chinese", action="store_true", help="Skip Chinese CDP round")
+    parser.add_argument("--test-cnki", help="Test single CNKI paper download (provide article URL)")
+    parser.add_argument("--test-wanfang", help="Test single Wanfang paper download (provide article URL)")
 
     args = parser.parse_args()
 
@@ -563,18 +989,77 @@ def main():
             print(f"❌ Failed: status={status}")
         return
 
+    # --test-cnki (single CNKI paper via article URL)
+    if args.test_cnki:
+        article_url = args.test_cnki.strip()
+        if not article_url.startswith("http"):
+            print(f"ERROR: --test-cnki requires a full article URL (https://...)")
+            sys.exit(1)
+        print(f"=== Chinese Download — Test Mode (CNKI) ===")
+        print(f"URL: {article_url}")
+        if not check_cdp(args.port):
+            print(f"\nERROR: CDP Chrome not running on port {args.port}.")
+            sys.exit(1)
+        print(f"\nDownloading via CNKI CDP...")
+        result_path, status, pub = generic_download_one(
+            args.port, f"cnki.test.{hashlib.md5(article_url.encode()).hexdigest()[:8]}",
+            args.output, article_url=article_url
+        )
+        if result_path and status == "ok":
+            size_kb = os.path.getsize(result_path) // 1024
+            print(f"✅ Downloaded: {result_path} ({size_kb} KB)")
+        else:
+            print(f"❌ Failed: status={status}")
+        return
+
+    # --test-wanfang (single Wanfang paper via article URL)
+    if args.test_wanfang:
+        article_url = args.test_wanfang.strip()
+        if not article_url.startswith("http"):
+            print(f"ERROR: --test-wanfang requires a full article URL (https://...)")
+            sys.exit(1)
+        print(f"=== Chinese Download — Test Mode (Wanfang) ===")
+        print(f"URL: {article_url}")
+        if not check_cdp(args.port):
+            print(f"\nERROR: CDP Chrome not running on port {args.port}.")
+            sys.exit(1)
+        print(f"\nDownloading via Wanfang CDP...")
+        result_path, status, pub = generic_download_one(
+            args.port, f"wanfang.test.{hashlib.md5(article_url.encode()).hexdigest()[:8]}",
+            args.output, article_url=article_url
+        )
+        if result_path and status == "ok":
+            size_kb = os.path.getsize(result_path) // 1024
+            print(f"✅ Downloaded: {result_path} ({size_kb} KB)")
+        else:
+            print(f"❌ Failed: status={status}")
+        return
+
     # Batch mode
     if args.input:
         dois = parse_input(args.input)
     elif args.papers:
         dois = [d.strip() for d in args.papers.split(",") if d.strip()]
+    elif args.chinese_input:
+        dois = []  # Chinese-only mode, no English DOIs to parse
     else:
         parser.print_help()
         sys.exit(1)
 
-    if not dois:
-        print("No DOIs found.")
+    if not dois and not args.chinese_input:
+        print("No DOIs or Chinese papers found.")
         sys.exit(1)
+
+    # ── Parse Chinese papers ───────────────────────────────────────────
+    chinese_papers: list[dict] = []
+    if args.chinese_input:
+        chinese_papers = parse_chinese_papers(args.chinese_input)
+        if chinese_papers:
+            cnki_count = sum(1 for p in chinese_papers if p["source"] == "cnki")
+            wf_count = sum(1 for p in chinese_papers if p["source"] == "wanfang")
+            print(f"Chinese papers: {len(chinese_papers)} total ({cnki_count} CNKI + {wf_count} Wanfang)")
+        else:
+            print("No Chinese papers found in input.")
 
     # Deduplicate
     seen = set()
@@ -593,10 +1078,25 @@ def main():
     print(f"Total unique DOIs: {len(dois)}")
     print(f"Output directory:  {args.output}/")
     print(f"CDP port:          {args.port}")
+    if chinese_papers:
+        print(f"Chinese papers:    {len(chinese_papers)} "
+              f"({sum(1 for p in chinese_papers if p['source']=='cnki')} CNKI + "
+              f"{sum(1 for p in chinese_papers if p['source']=='wanfang')} Wanfang)")
     print()
 
-    # Classify all DOIs
+    # Initialize classified list (may be empty for Chinese-only mode)
     classified = [classify_doi(d) for d in dois]
+
+    # Build classified entries for Chinese papers (for routing display + login gate)
+    if chinese_papers:
+        for p in chinese_papers:
+            if p.get("article_url"):
+                c = classify_doi(p.get("doi", ""))
+                c["strategy"] = "chinese_cdp"
+                c["publisher"] = p["source"]
+                classified.append(c)
+
+    # Group classified entries by strategy for display
     by_strategy: dict[str, list] = {}
     for c in classified:
         s = c["strategy"]
@@ -608,6 +1108,7 @@ def main():
         "sd_cdp": "ScienceDirect CDP",
         "ieee_cdp": "IEEE CDP",
         "generic": "Generic CDP",
+        "chinese_cdp": "Chinese CDP (CNKI/Wanfang)",
         "direct_http": "Direct HTTP",
         "skip": "SKIP (unavailable)",
     }
@@ -618,11 +1119,15 @@ def main():
             print(f"  {label:25s}: {len(items):3d} papers")
 
     if args.dry_run:
-        print(f"\n[DRY RUN] Would download {sum(1 for c in classified if c['strategy'] != 'skip')} papers.")
+        total = sum(1 for c in classified if c["strategy"] != "skip")
+        print(f"\n[DRY RUN] Would download {total} papers "
+              f"({sum(1 for c in classified if c['strategy']=='chinese_cdp')} Chinese)")
         return
 
-    # Check CDP
-    if not check_cdp(args.port):
+    # Check CDP (required for all rounds except Sci-Hub only)
+    has_cdp_rounds = any(c["strategy"] in ("sd_cdp", "generic", "chinese_cdp")
+                         for c in classified) or bool(chinese_papers)
+    if has_cdp_rounds and not check_cdp(args.port):
         print(f"\nERROR: CDP Chrome not running on port {args.port}.")
         print("Start Chrome with:")
         print(f"  /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \\")
@@ -634,65 +1139,106 @@ def main():
     if not check_required_deps():
         sys.exit(1)
 
-    # ── Run rounds ────────────────────────────────────────────────────
-    remaining = list(dois)
-    all_downloaded = []
-    round_results = []
+    # ═══════════════════════════════════════════════════════════════════
+    # Phase 1: Sci-Hub (background) + Chinese gate + Chinese CDP
+    # Sci-Hub is free, no login needed. Chinese needs login but runs
+    # independently of Sci-Hub. Both start concurrently.
+    # ═══════════════════════════════════════════════════════════════════
 
-    # Round 1: Sci-Hub
-    if not args.skip_scihub:
-        downloaded, remaining = run_scihub_round(remaining, args.output, args.port)
-        all_downloaded.extend(downloaded)
-        round_results.append({"round": "Sci-Hub", "downloaded": downloaded})
-    else:
-        print(f"\n⏭ Round 1 (Sci-Hub): Skipped (--skip-scihub)")
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    if not remaining:
-        print(f"\n🎉 All papers downloaded! ({len(all_downloaded)}/{len(dois)})")
-        generate_download_log(args.output, dois, round_results)
-        return
+    scihub_future = None
+    ch_future = None
+    scihub_dl: list[str] = []
+    scihub_rem = list(dois)
 
-    # Round 2: ScienceDirect
-    if not args.skip_sd:
-        downloaded, remaining = run_sd_round(remaining, args.output, args.port)
-        all_downloaded.extend(downloaded)
-        round_results.append({"round": "SD CDP", "downloaded": downloaded})
-    else:
-        print(f"\n⏭ Round 2 (SD CDP): Skipped (--skip-sd)")
+    with ThreadPoolExecutor(max_workers=2) as phase1:
+        # Sci-Hub: starts immediately in background (free, no login)
+        if dois and not args.skip_scihub:
+            scihub_future = phase1.submit(
+                run_scihub_round, list(dois), args.output, args.port
+            )
 
-    if not remaining:
-        print(f"\n🎉 All papers downloaded! ({len(all_downloaded)}/{len(dois)})")
-        generate_download_log(args.output, dois, round_results)
-        return
+        # Chinese: gate first, then CDP
+        if chinese_papers and not args.skip_chinese:
+            if args.require_login_confirm:
+                if show_chinese_login_gate(chinese_papers):
+                    ch_future = phase1.submit(
+                        run_chinese_round, chinese_papers, args.output, args.port
+                    )
+                else:
+                    print("Chinese download skipped by user.")
+            else:
+                ch_future = phase1.submit(
+                    run_chinese_round, chinese_papers, args.output, args.port
+                )
 
-    # Round 3: IEEE
-    if not args.skip_ieee:
-        downloaded, remaining = run_ieee_round(remaining, args.output, args.port)
-        all_downloaded.extend(downloaded)
-        round_results.append({"round": "IEEE CDP", "downloaded": downloaded})
-    else:
-        print(f"\n⏭ Round 3 (IEEE CDP): Skipped (--skip-ieee)")
+    # Collect Phase 1 results
+    if scihub_future:
+        scihub_dl, scihub_rem = scihub_future.result()
 
-    if not remaining:
-        print(f"\n🎉 All papers downloaded! ({len(all_downloaded)}/{len(dois)})")
-        generate_download_log(args.output, dois, round_results)
-        return
+    ch_dl: list[str] = []
+    ch_rem: list[str] = []
+    if ch_future:
+        ch_dl, ch_rem = ch_future.result()
 
-    # Round 4: Generic CDP
-    downloaded, remaining = run_generic_round(
-        remaining, args.output, args.port, include_si=args.include_si
+    # ═══════════════════════════════════════════════════════════════════
+    # Phase 2: English login gate (after Sci-Hub) + English CDP
+    # Only fires if papers remain after Sci-Hub and need CDP access.
+    # ═══════════════════════════════════════════════════════════════════
+
+    en_dl: list[str] = []
+    en_rem = list(scihub_rem)
+    en_results: list[dict] = []
+
+    if en_rem:
+        # Check if remaining papers actually need CDP
+        has_cdp = any(
+            classify_doi(d)["strategy"] in ("sd_cdp", "generic")
+            for d in en_rem
+        )
+        if args.require_login_confirm and has_cdp:
+            if show_english_login_gate(en_rem, skip_sd=args.skip_sd):
+                en_dl, en_rem, en_results = run_english_cdp(
+                    en_rem, args.output, args.port,
+                    skip_sd=args.skip_sd, include_si=args.include_si
+                )
+            else:
+                print("English CDP skipped by user — Sci-Hub papers saved.")
+        else:
+            en_dl, en_rem, en_results = run_english_cdp(
+                en_rem, args.output, args.port,
+                skip_sd=args.skip_sd, include_si=args.include_si
+            )
+    elif not scihub_rem:
+        print(f"\n🎉 Sci-Hub downloaded all papers! ({len(scihub_dl)}/{len(dois)})")
+
+    # ═══════════════════════════════════════════════════════════════════
+    # Phase 3: Merge results from all phases
+    # ═══════════════════════════════════════════════════════════════════
+
+    all_downloaded = scihub_dl + ch_dl + en_dl
+    round_results = (
+        [{"round": "Sci-Hub", "downloaded": scihub_dl}] * (1 if scihub_dl else 0) +
+        ([{"round": "Chinese CDP", "downloaded": ch_dl}] if ch_dl or (chinese_papers and not args.skip_chinese) else []) +
+        en_results
     )
-    all_downloaded.extend(downloaded)
-    round_results.append({"round": "Generic CDP", "downloaded": downloaded})
+    remaining = en_rem + ch_rem
+
+    # Extend doi list with Chinese paper identifiers for download log
+    ch_dois = [p.get("doi") or p.get("title", "") for p in chinese_papers] if chinese_papers else []
+    if ch_dois:
+        dois = dois + ch_dois
 
     # ── Final summary ─────────────────────────────────────────────────
     log_path = generate_download_log(args.output, dois, round_results)
 
+    total_all = len(dois)
     print(f"\n{'='*60}")
     print(f"Final Summary")
     print(f"{'='*60}")
-    print(f"  Total DOIs:      {len(dois)}")
-    print(f"  ✅ Downloaded:   {len(all_downloaded)}")
+    print(f"  Total papers:     {total_all}")
+    print(f"  ✅ Downloaded:    {len(all_downloaded)}")
     print(f"  ❌ Failed/Pending: {len(remaining)}")
 
     if remaining:

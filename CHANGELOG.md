@@ -97,6 +97,58 @@
 |------|------|
 | `SKILL.md` | +11 触发词、+1 路由行、概览图 +1 节点 |
 
+### CDP 登录门控 — 文档规则 + 脚本机制双层防护 🆕
+
+- **问题**：Agent 在执行 CDP 下载时直接调用路由器，未提示用户完成机构登录，导致批量失败
+- **文档层**：`agents/step_5_download.md` 新增 Section 6.0 CDP 登录门控硬性规则
+  - Agent 必须先 `--dry-run` 查看需要登录的出版社
+  - Agent 必须打开浏览器并暂停，提示用户完成机构登录
+  - 仅收到"已登录"确认后才能执行下载
+  - 质量门槛新增 2 项登录检查点
+- **脚本层**：`scripts/unified_download_router.py` 新增 `--require-login-confirm` 参数
+  - `show_login_gate()` 扫描分类结果，列出需登录的出版社及其域名
+  - 提示用户完成 SSO 登录后回车确认
+  - 支持 `已登录/y/yes/done/继续` 确认，`q/quit/abort` 中止
+  - OA 出版社（direct_http）和 Sci-Hub 自动跳过门控
+  - `--dry-run` 不受门控限制
+
+### 修改文件
+
+| 文件 | 改动 |
+|------|------|
+| `agents/step_5_download.md` | +Section 6.0 登录门控规则、+2 质量门槛项、+3 命令示例 |
+| `scripts/unified_download_router.py` | +`show_login_gate()` 函数、+`--require-login-confirm` 参数、+`LOGIN_REQUIRED_STRATEGIES` |
+
+### 中文文献下载路由 — CNKI + Wanfang CDP 🆕
+
+- **问题**：v1.0.6 已支持 CNKI/Wanfang 检索，但下载管线仅覆盖英文出版社，中文文献检索到了但下不了
+- **核心设计**：中文文献多数无真实 DOI，无法走英文 DOI 前缀路由。新增独立 Chinese CDP Round，通过 `source` 字段识别后直接按文章页 URL 下载
+- **`config/publishers.toml`**：新增 CNKI 和 Wanfang publisher 条目，`strategy = "chinese_cdp"`
+- **`scripts/generic_publisher_downloader.py`**：
+  - `download_one()` 新增 `article_url` 参数，支持直接传入文章页 URL
+  - `_strategy_article_page()` 新增 `article_url_override` 参数，绕过 DOI→URL 映射
+  - `chinese_cdp` 策略路由：直接导航文章页 → CSS 选择器提取 PDF 链接 → CDP Fetch 捕获
+- **`scripts/unified_download_router.py`**：
+  - 新增 `parse_chinese_papers()` — 从 Markdown 文献表/JSON 中提取中文论文
+  - 新增 `run_chinese_round()` — Round 5 Chinese CDP，复用 Generic CDP 引擎
+  - 新增 `--chinese-input`、`--skip-chinese`、`--test-cnki`、`--test-wanfang` 参数
+  - `show_login_gate()` 扩展为包含 CNKI/Wanfang 登录提示
+  - `chinese_cdp` 加入 `STRATEGY_ORDER` 和 `LOGIN_REQUIRED_STRATEGIES`
+- **`agents/step_5_download.md`**：路由矩阵新增 Round 5 Chinese CDP，命令参考新增 4 条中文下载命令
+- **`agents/step_4_search_score.md`**：新增中文论文文章 URL 保留规则
+- **`references/literature-table-template.md`**：新增中文论文备注（文章链接保留要求）
+
+### 修改文件
+
+| 文件 | 改动 |
+|------|------|
+| `config/publishers.toml` | +2 条目（CNKI、Wanfang） |
+| `scripts/generic_publisher_downloader.py` | +`chinese_cdp` 路由、+`article_url`/`article_url_override` 参数 |
+| `scripts/unified_download_router.py` | +`parse_chinese_papers()`、+`run_chinese_round()`、+4 CLI 参数、+门控扩展 |
+| `agents/step_5_download.md` | +Round 5 矩阵行、+4 命令示例、+门控范围更新 |
+| `agents/step_4_search_score.md` | +文章 URL 保留规则 |
+| `references/literature-table-template.md` | +中文论文备注 |
+
 ---
 
 

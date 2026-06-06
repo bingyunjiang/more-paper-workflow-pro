@@ -98,11 +98,22 @@ def resolve_publisher(doi: str) -> dict | None:
 
 def download_one(port: int, doi: str, output_dir: str = "paper-temp",
                  include_si: bool = False,
-                 timeout: int = DEFAULT_TIMEOUT) -> tuple[Optional[str], str, str]:
+                 timeout: int = DEFAULT_TIMEOUT,
+                 article_url: str = "") -> tuple[Optional[str], str, str]:
     """Download one paper via generic CDP strategies.
 
+    Args:
+        port: CDP Chrome debug port.
+        doi: DOI string (or synthetic identifier for Chinese papers).
+        output_dir: Directory to save downloaded PDF.
+        include_si: If True, attempt supplementary info download.
+        timeout: Max seconds per download attempt.
+        article_url: Direct article page URL override.
+                     Required for chinese_cdp strategy (CNKI/Wanfang
+                     papers lack standard DOI→URL mapping).
+
     Returns: (pdf_path_or_None, status, publisher_name)
-      status: "ok" | "failed" | "skipped" | "manual_required"
+      status: "ok" | "failed" | "skipped" | "manual_required" | "no_url"
     """
     publisher = resolve_publisher(doi)
     pub_name = publisher.get("_key", "unknown") if publisher else "unknown"
@@ -123,6 +134,17 @@ def download_one(port: int, doi: str, output_dir: str = "paper-temp",
 
     if strategy in ("sd_cdp", "ieee_cdp", "scihub_only"):
         return None, "delegated", pub_name  # handled by router, not us
+
+    # Chinese CDP: navigate directly to article detail page (no DOI→URL mapping)
+    if strategy == "chinese_cdp":
+        if not article_url:
+            return None, "no_url", pub_name
+        dest = _doi_to_filename(doi, output_dir)
+        pdf_data = _strategy_article_page(port, doi, publisher, timeout,
+                                          article_url_override=article_url)
+        if pdf_data:
+            return _save_pdf(pdf_data, dest), "ok", pub_name
+        return None, "failed", pub_name
 
     # Generic strategy: A → B fallback
     dest = _doi_to_filename(doi, output_dir)
@@ -260,11 +282,21 @@ def _strategy_direct_pdf(port: int, doi: str, publisher: dict,
 # ── Strategy B: Article Page Extraction ─────────────────────────────────────
 
 def _strategy_article_page(port: int, doi: str, publisher: dict,
-                           timeout: int = DEFAULT_TIMEOUT) -> Optional[bytes]:
-    """Navigate to article page, find PDF link via CSS selectors, capture PDF."""
-    article_url = _build_article_url(doi)
-    if not article_url:
-        return None
+                           timeout: int = DEFAULT_TIMEOUT,
+                           article_url_override: str = "") -> Optional[bytes]:
+    """Navigate to article page, find PDF link via CSS selectors, capture PDF.
+
+    Args:
+        article_url_override: If provided, use this URL directly instead of
+                              building from DOI. Used for chinese_cdp strategy
+                              where papers lack standard DOI→URL mapping.
+    """
+    if article_url_override:
+        article_url = article_url_override
+    else:
+        article_url = _build_article_url(doi)
+        if not article_url:
+            return None
 
     selectors = publisher.get("selectors", [])
     if not selectors:

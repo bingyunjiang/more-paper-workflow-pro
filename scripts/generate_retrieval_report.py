@@ -213,6 +213,7 @@ def _generate_xlsx(rows: list[dict], output_path: str):
         ("year", "年份"),
         ("journal", "期刊/会议"),
         ("source", "来源"),
+        ("article_url", "文章链接"),
         ("score", "评分"),
         ("tier", "Tier"),
         ("citations", "引用数"),

@@ -384,6 +384,48 @@ def _build_wanfang_url(query, page=1, page_size=20):
     return WANFANG_SPA_URL + "?" + urllib.parse.urlencode(params)
 
 
+# ── Wanfang Author Utilities ──────────────────────────────────────────────
+
+def _clean_wanfang_authors(raw):
+    """Clean and parse Wanfang author strings.
+
+    Handles dirty fields like:
+      - "作者：张三;李四"
+      - "[硕士论文]王龙泽机械工程兰州交通大学"
+    """
+    if not raw:
+        return []
+    text = re.sub(r'作者[：:]\s*', '', raw).strip()
+    text = re.sub(r'^\[(硕士|博士|学位)论文\]', '', text)
+
+    # Thesis format: name + major + school — extract name only
+    thesis_m = re.match(r'^([一-龥]{2,4})(?:材料|机械|工程|航空|制造|车辆|控制|力学)', text)
+    if thesis_m:
+        return [thesis_m.group(1)]
+
+    # Truncate at markers like abstract/keywords/download links
+    text = re.split(r'摘要[：:]|关键词[：:]|在线阅读|下载|引用|收藏', text)[0]
+    parts = [p.strip() for p in re.split(r'[;；,，、\s]+', text) if p.strip()]
+    bad = {'万方数据', '硕士论文', '博士论文', '期刊', '会议', '摘要'}
+    return [p for p in parts if p not in bad and 2 <= len(p) <= 30]
+
+
+def _extract_wanfang_authors_from_text(text):
+    """Extract authors from Wanfang result text using known patterns."""
+    patterns = [
+        r'作者[：:]\s*([^\n]+)',
+        r'作者\s+([^\n]+)',
+        r'\[(?:硕士|博士)论文\]([^\n]+)',
+    ]
+    for pat in patterns:
+        m = re.search(pat, text)
+        if m:
+            authors = _clean_wanfang_authors(m.group(1))
+            if authors:
+                return authors
+    return []
+
+
 def _parse_wanfang_html(html, max_results):
     """Parse Wanfang search results HTML into paper dicts.
 
@@ -435,13 +477,25 @@ def _parse_wanfang_html(html, max_results):
                 doi = f"wanfang.{title_hash}"
 
             # Authors
-            author_el = (item.select_one("p.author")
-                         or item.select_one("div.author")
-                         or item.select_one("[class*='author']"))
+            author_el = (
+                item.select_one("p.author")
+                or item.select_one("div.author")
+                or item.select_one("[class*='author']")
+                or item.select_one("[class*='creator']")
+                or item.select_one("[class*='writer']")
+            )
             authors = []
             if author_el:
-                authors_raw = author_el.get_text(strip=True)
-                authors = [a.strip() for a in re.split(r'[;；,，]', authors_raw) if a.strip()[:2]]
+                authors = _clean_wanfang_authors(author_el.get_text(" ", strip=True))
+            if not authors:
+                # Fallback: scan full item text for author pattern
+                authors = _extract_wanfang_authors_from_text(item.get_text("\n", strip=True))
+
+            # Capture detail page URL (for later author enrichment)
+            detail_url = ""
+            if title_el.get("href"):
+                href = title_el["href"]
+                detail_url = href if href.startswith("http") else "https://www.wanfangdata.com.cn" + href
 
             # Year + venue from source info
             year = 0
@@ -478,6 +532,7 @@ def _parse_wanfang_html(html, max_results):
                 "citations": citations,
                 "abstract": "",
                 "source": "wanfang",
+                "url": detail_url,
             })
     except Exception:
         # Fallback: regex-based extraction
@@ -633,19 +688,8 @@ def _parse_wanfang_results_from_text(text, max_results):
                 if not (1990 <= year <= 2026):
                     year = 0
 
-            # Parse authors (semicolon or comma separated before the year)
-            authors = []
-            author_part = info_text.split(str(year))[0].strip() if year else info_text
-            # Authors are typically before the source/journal info
-            for sep in [";", "；", "，", ","]:
-                if sep in author_part:
-                    parts = [a.strip() for a in author_part.split(sep) if a.strip()]
-                    # Check if first result looks like a name
-                    if parts and len(parts[0]) >= 2 and len(parts) <= 8:
-                        authors = parts
-                        break
-            if not authors and len(author_part) >= 2 and len(author_part) <= 20:
-                authors = [author_part]
+            # Parse authors — use regex-based extraction instead of guessing
+            authors = _extract_wanfang_authors_from_text(info_text)
 
             # Parse venue
             venue = ""
@@ -695,6 +739,53 @@ def _parse_wanfang_results_from_text(text, max_results):
         i += 1
 
     return results
+
+
+def _enrich_wanfang_authors_cdp(ws, results):
+    """For Wanfang results with empty authors, navigate to detail page and extract.
+
+    Uses the existing CDP WebSocket connection. Detail page URL is taken
+    from the article_url field (injected by DOM extraction) or url field
+    (from HTML parser).
+    """
+    enriched = 0
+    for i, r in enumerate(results):
+        if r.get("authors"):
+            continue
+        detail_url = r.get("article_url") or r.get("url", "")
+        if not detail_url or "wanfangdata.com.cn" not in detail_url:
+            continue
+
+        try:
+            ws.send(json.dumps({
+                "id": 900 + i, "method": "Page.navigate",
+                "params": {"url": detail_url},
+            }))
+            json.loads(ws.recv())
+
+            # Wait for detail page to load
+            for _ in range(8):
+                time.sleep(0.8)
+                ws.send(json.dumps({
+                    "id": 910 + i, "method": "Runtime.evaluate",
+                    "params": {"expression": (
+                        "document.body ? document.body.innerText.substring(0, 3000) : ''"
+                    )},
+                }))
+                resp = json.loads(ws.recv())
+                body = resp.get("result", {}).get("result", {}).get("value", "")
+                if len(body) > 200:
+                    break
+
+            authors = _extract_wanfang_authors_from_text(body)
+            if authors:
+                r["authors"] = authors
+                enriched += 1
+        except Exception:
+            continue
+
+    if enriched:
+        print(f"  Wanfang CDP: enriched {enriched} authors from detail pages", flush=True)
 
 
 def _try_wanfang_cdp(query, limit=20):
@@ -777,30 +868,151 @@ def _try_wanfang_cdp(query, limit=20):
             if time.time() > timeout:
                 break
 
-        # Extract the rendered page text
+        # Extract structured results from Vue component DOM
         ws.send(json.dumps({
-            "id": 3,
+            "id": 10,
             "method": "Runtime.evaluate",
-            "params": {"expression": "document.body ? document.body.innerText : ''"},
+            "params": {"expression": f"""
+(() => {{
+  // Check for login page
+  var body = document.body ? document.body.innerText : '';
+  var isLogin = body.indexOf('统一身份认证') >= 0 ||
+                body.indexOf('CARSI') >= 0 ||
+                body.indexOf('fsso') >= 0;
+
+  var results = [];
+  // Use global selector — .normal-list may have nested wrappers
+  var items = document.querySelectorAll('.title-area');
+
+  for (var i = 0; i < items.length && results.length < {limit}; i++) {{
+    var ta = items[i];
+
+    // Title
+    var titleEl = ta.querySelector('.title');
+    if (!titleEl) continue;
+    var title = titleEl.innerText.trim();
+    if (!title || title.length < 3) continue;
+
+    // Paper ID → construct detail page URL
+    var idEl = ta.querySelector('.title-id-hidden');
+    var paperId = idEl ? idEl.innerText.trim() : '';
+    // Title hash for synthetic DOI and indexing
+    var titleHash = '';
+    for (var j = 0; j < Math.min(title.length, 12); j++) {{
+      titleHash += title.charCodeAt(j).toString(16);
+    }}
+
+    // Find the parent card/item container — walk up until we find one with .authors
+    var card = ta.parentElement;
+    for (var k = 0; k < 6 && card && !card.querySelector('.authors'); k++) {{
+      card = card.parentElement;
+    }}
+    if (!card) card = ta.parentElement;
+
+    // Authors — each in <span class="authors">Name</span>
+    var authorEls = card.querySelectorAll('.authors');
+    var authors = [];
+    authorEls.forEach(function(a) {{
+      var name = a.innerText.trim();
+      // Filter out non-name strings (dates, issue numbers, separator symbols)
+      if (name && name !== 'Unknown' &&
+          !/^\\d/.test(name) &&          // skip '2025年7期'
+          !/^[等和及与,，;；]$/.test(name) &&  // skip single separator chars
+          name.length >= 2 && name.length <= 10) {{
+        authors.push(name);
+      }}
+    }});
+
+    // Paper type: <span class="essay-type">期刊论文/硕士论文</span>
+    var typeEl = card.querySelector('.essay-type');
+    var essayType = typeEl ? typeEl.innerText.trim() : '';
+
+    // Journal or institution: <span class="periodical-title"> for journals, <span class="org"> for theses
+    var journalEl = card.querySelector('.periodical-title');
+    var journal = journalEl ? journalEl.innerText.trim().replace(/^[《〈](.+)[》〉]$/, '$1') : '';
+    if (!journal) {{
+      // Thesis paper — get institution from <span class="org">
+      var orgEl = card.querySelector('.org');
+      if (orgEl) {{
+        journal = orgEl.innerText.trim().replace(/\\d{4}$/, '').trim();
+        // If org contains year, use only the institution name
+        var orgSpan = orgEl.querySelector('span');
+        if (orgSpan) journal = orgSpan.innerText.trim();
+      }}
+    }}
+
+    // Year — from card text, find 4-digit year
+    var cardText = (card.innerText || '').replace(/\\n/g, ' ');
+    var yearMatch = cardText.match(/(\\d{{4}})/);
+    var year = 0;
+
+    // Abstract — walk up to find the result row then check for abstract
+    var row = card;
+    for (var k2 = 0; k2 < 6 && row && !row.querySelector('[class*=\"abstract\"]'); k2++) {{
+      row = row.parentElement;
+    }}
+    var absEl = row ? row.querySelector('[class*=\"abstract\"], [class*=\"desc\"]') : null;
+    var abstract = absEl ? absEl.innerText.trim() : '';
+    // Fallback: look for 摘要：in card text
+    if (!abstract) {{
+      var absMatch = cardText.match(/(?<!英文)摘要[：:]\\s*(.+?)(?=\\n\\d+[.．]|\\n\\[|\\Z)/);
+      if (absMatch) abstract = absMatch[1].trim();
+    }}
+    // Validate year range (filter out alloy numbers like 5052)
+    if (yearMatch) {{
+      var y = parseInt(yearMatch[1]);
+      if (y >= 1990 && y <= 2026) year = y;
+    }}
+
+    results.push({{
+      doi: 'wanfang.' + titleHash,
+      title: title,
+      year: year,
+      venue: journal || '万方数据',
+      authors: authors,
+      citations: 0,
+      abstract: abstract,
+      source: 'wanfang',
+      // Build correct URL: d.wanfangdata.com.cn/thesis/{id} or periodical/{id}
+      article_url: paperId ? (
+        paperId.indexOf('thesis_') === 0
+          ? 'https://d.wanfangdata.com.cn/thesis/' + paperId.replace('thesis_', '')
+          : 'https://d.wanfangdata.com.cn/periodical/' + paperId.replace('periodical_', '')
+      ) : '',
+      _paper_id: paperId,
+    }});
+  }}
+
+  return JSON.stringify({{
+    count: results.length,
+    isLogin: isLogin,
+    results: results,
+  }});
+}})()
+            """},
         }))
         r = json.loads(ws.recv())
         ws.close()
 
-        text = r.get("result", {}).get("result", {}).get("value", "")
-        if not text or len(text) < 100:
+        raw_val = r.get("result", {}).get("result", {}).get("value", "{}")
+        try:
+            parsed = json.loads(raw_val) if isinstance(raw_val, str) else raw_val
+        except Exception:
             return None
 
-        # Check for results — if we see "找到X条文献" or result numbers, we're good
-        has_results = bool(re.search(r'找到\d+条文献', text))
-        is_login_page = any(ind in text.lower()[:600] for ind in
-                           ["统一身份认证", "CARSI", "fsso"])
-        if is_login_page and not has_results:
+        if isinstance(parsed, dict) and parsed.get("error"):
+            return None
+        if isinstance(parsed, dict) and parsed.get("isLogin"):
             print("  Wanfang Data: CDP mode — still on login page. "
                   "Please complete CARSI login in the browser.", flush=True)
             return None
 
-        # Parse results from the rendered text
-        results = _parse_wanfang_results_from_text(text, limit)
+        if isinstance(parsed, dict) and "results" in parsed:
+            results = parsed["results"]
+            print(f"  Wanfang Data CDP: {len(results)} results found", flush=True)
+        else:
+            return []
+
         return results
 
     except Exception as e:
@@ -945,6 +1157,12 @@ def _parse_cnki_html(html, max_results):
             if not title or title == "?":
                 continue
 
+            # Article URL from title link href (detail page, used by Step 5 download)
+            article_url = ""
+            if title_el.get("href"):
+                href = title_el["href"]
+                article_url = "http://kns.cnki.net/kns/brief/" + href if href.startswith("brief") else href
+
             # Download URL from briefDl_D link
             download_url = ""
             dl_link = tds[1].find("a", class_="briefDl_D") if len(tds) > 1 else None
@@ -989,6 +1207,7 @@ def _parse_cnki_html(html, max_results):
                 "citations": citations,
                 "abstract": "",
                 "source": "cnki",
+                "article_url": article_url,
                 "_download_url": download_url,
                 "_export_id": export_id,
             })
@@ -1313,6 +1532,10 @@ def _try_cnki_cdp(query, limit=20):
         parsed = json.loads(raw_val) if isinstance(raw_val, str) else raw_val
         if isinstance(parsed, dict) and "results" in parsed:
             results = parsed["results"]
+            # Expose _href as article_url for Step 5 download
+            for r in results:
+                if r.get("_href") and not r.get("article_url"):
+                    r["article_url"] = r["_href"]
             print(f"  CNKI CDP: {len(results)} results found", flush=True)
         elif isinstance(parsed, dict) and "error" in parsed:
             ws.close()
@@ -2003,6 +2226,9 @@ def export_bibtex(results, output_path, tier_map=None):
             lines.append(f"  abstract  = {{{_escape_bibtex(abstract)}}},")
         if note:
             lines.append(f"  note      = {{{_escape_bibtex(note)}}},")
+        article_url = r.get("article_url", "")
+        if article_url:
+            lines.append(f"  url       = {{{_escape_bibtex(article_url)}}},")
         lines.append("}")
         lines.append("")
 

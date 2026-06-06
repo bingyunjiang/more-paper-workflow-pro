@@ -256,6 +256,11 @@ python3 scripts/arxiv_helper.py "query string" \
 > **CNKI + 万方备注** 🆕：无真实 DOI 的论文使用 `cnki.{title_hash}` 或 `wanfang.{title_hash}` 作为标识符。
 > 这些条目不进入 Crossref 验证（跳过步骤①），直接进入评分阶段。
 > 若有真实 DOI（`10.xxxx/...` 格式），则正常验证。
+>
+> **中文论文文章 URL 保留** 🆕：中文论文（source=cnki/wanfang）在检索结果中必须保留**文章详情页 URL**，
+> 写入检索文献表的 `文章链接` 列。此 URL 是 Step 5 Chinese CDP Round 下载的入口。
+> CNKI 检索结果中的 `briefDl_D` 链接和 Wanfang 结果中的详情页链接均需保留。
+> 若无可用 URL，标注 `⚠️ 缺文章页URL`，该论文将无法在 Step 5 自动下载。
 
 ### 4b: DOI 去重
 

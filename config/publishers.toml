@@ -7,6 +7,8 @@
 #   sd_cdp      → Use existing sd_download.py (96% success, dedicated infrastructure)
 #   ieee_cdp    → Use existing download_via_ieee.py (100% with SSO)
 #   generic     → Use generic_publisher_downloader.py (strategy A → B fallback)
+#   chinese_cdp → CDP-based download for Chinese publishers (CNKI/Wanfang)
+#                 navigates to article detail page, extracts PDF via selectors
 #   direct_http → Standard urllib download (OA journals, no auth needed)
 #   scihub_only → Only Sci-Hub works for this publisher (post-2021 papers may miss)
 #   skip        → Known impossible to automate (Akamai/Cloudflare without fallback)
@@ -396,6 +398,48 @@ selectors = [
 requires_auth = "none"
 publisher_domain = "papers.ssrn.com"
 known_issues = "Preprints. HTTP direct may timeout. Try CDP browser."
+
+
+# =============================================================================
+# CHINESE CDP PUBLISHERS (CNKI / Wanfang)
+# =============================================================================
+
+# --- CNKI (中国知网) ---
+[publishers.cnki]
+doi_prefixes = ["10.3969/"]  # CNKI papers occasionally have real DOIs with this prefix
+strategy = "chinese_cdp"
+selectors = [
+    "a.downlink",
+    "a[href*=\"download\"]",
+    "a[href*=\".pdf\"]",
+    "a[onclick*=\"download\"]",
+    "div.download a",
+    "#download a",
+    "a:has-text(\"下载\")",
+    "a:has-text(\"PDF\")",
+    "a:has-text(\"CAJ\")",
+]
+requires_auth = "institution"
+publisher_domain = "kns.cnki.net"
+known_issues = "大多数中文论文无真实 DOI，需通过检索结果中的文章详情页链接直接下载。CDP 浏览器需已登录 CNKI（校园网 IP 直连或 CARSI SSO）。提供 PDF 和 CAJ 两种下载格式。"
+
+# --- Wanfang Data (万方数据) ---
+[publishers.wanfang]
+doi_prefixes = []  # 万方论文几乎都没有真实 DOI
+strategy = "chinese_cdp"
+selectors = [
+    "a[href*=\"/download/\"]",
+    "a.download-btn",
+    "a[href*=\"downloadFile\"]",
+    "a[href*=\".pdf\"]",
+    "div.download-box a",
+    "a.down",
+    "a:has-text(\"下载\")",
+    "a:has-text(\"PDF\")",
+]
+requires_auth = "institution"
+publisher_domain = "www.wanfangdata.com.cn"
+known_issues = "大多数论文无真实 DOI，需通过检索结果中的详情页链接直接下载。需 CARSI SSO 或校园网 IP。搜索结果页直接提供摘要，详情页可下载全文。"
 
 
 # =============================================================================

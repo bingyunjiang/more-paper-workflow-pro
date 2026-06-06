@@ -1,6 +1,6 @@
 # Step 5: 统一批量下载 (Unified Download Router)
 
-> 单一命令自动路由，三轮顺序执行（Sci-Hub → SD CDP → Generic CDP），覆盖 24 家出版社。IEEE 走 Generic CDP 策略 B（文章页提取 stamp URL），专用 `download_via_ieee.py` 作为交互式 SSO 备用。
+> **中英文双管道并行：** 登录门控后分叉启动。英文三轮顺序（Sci-Hub → SD CDP → Generic CDP），中文独立 CDP（CNKI/万方）。覆盖 24 家英文出版社 + 2 个中文数据库。IEEE 已归入 Generic CDP，`download_via_ieee.py` 保留作为手动 fallback。
 
 ---
 
@@ -54,28 +54,89 @@
 
 ## 6. 执行流程 (Execution Flow)
 
-**单一命令，自动路由到最优下载策略：**
+### 6.0 CDP 登录门控 🚧 硬性规则
+
+> **两个独立门控，分阶段触发。Sci-Hub 不需要门控。中文和英文各自独立确认。**
+
+**中文门控（Phase 1）：** Sci-Hub 后台启动的同时立即触发。仅提示 CNKI/万方。
+
+**英文门控（Phase 2）：** Sci-Hub 完成后触发。仅对剩余需 CDP 的英文论文提示。
+
+**不适用范围：** Sci-Hub（免费访问）、OA 直连 HTTP 下载（Frontiers、Beilstein 等）。
+
+**执行流程：**
+
+```
+Phase 1:
+1. Sci-Hub 后台启动（免费，不阻塞）
+2. 🚧 中文登录门控立即显示
+   "Please verify CNKI/Wanfang login:
+    • cnki (kns.cnki.net)
+    • wanfang (www.wanfangdata.com.cn)
+    Type '已登录' to proceed, 'q' to skip Chinese: "
+3. 用户确认 → Chinese CDP 启动
+
+Phase 2:
+4. 等待 Sci-Hub 完成
+5. 若有剩余英文 CDP 论文 → 🚧 英文登录门控
+   "[ScienceDirect CDP]  elsevier (sciencedirect.com)
+    [Generic CDP]  ieee (ieeexplore.ieee.org), acs (pubs.acs.org), ..."
+6. 用户确认 → English CDP 启动（R2 SD → R3 Generic）
+```
+
+**强制要求：**
+- Agent 禁止在用户确认登录前调用 `unified_download_router.py`（除 `--dry-run` 外）
+- Agent 必须先运行 `--dry-run` 或 `--test` 确认路由，再提示登录
+- 推荐使用 `--require-login-confirm` 参数启动路由器，由脚本层面再次门控
+
+**命令示例：**
 
 ```bash
-# 标准入口 — 自动按出版商路由下载
-python3 scripts/unified_download_router.py 检索文献表.md --output paper-temp/
+# Step 1: 先 dry-run 查看需要登录的出版社
+python3 scripts/unified_download_router.py 检索文献表.md --dry-run
 
-# Dry-run 模式 — 只看路由决策，不实际下载
+# Step 2: Agent 根据 dry-run 输出，打开对应出版社首页，提示用户登录
+
+# Step 3: 用户确认后，带门控参数执行
+python3 scripts/unified_download_router.py 检索文献表.md --output paper-temp/ --require-login-confirm
+
+# Dry-run 模式 — 只看路由决策，不实际下载（不受门控限制）
 python3 scripts/unified_download_router.py 检索文献表.md --dry-run
 
 # 单篇测试
 python3 scripts/unified_download_router.py --test 10.1021/acsnano.4c00001 --port 9223
 ```
 
-### 路由矩阵
+### 三阶段执行架构
 
-路由器自动将每篇 DOI 分配到正确策略，三轮顺序执行：
+```
+Phase 1 ──────────────────────────────────────────────────
+  Sci-Hub 启动（后台线程，免费，不需登录）
+  🚧 中文登录门控（立即显示）
+     CNKI/万方 → 用户确认 → Chinese CDP 启动
+     Sci-Hub 和 Chinese CDP 可能同时跑
+
+Phase 2 ──────────────────────────────────────────────────
+  等待 Sci-Hub 完成
+  若剩余英文 CDP 论文（SD / Generic）:
+    🚧 英文登录门控
+       Elsevier, IEEE, Wiley, ACS, ... → 用户确认
+       → English CDP 启动（R2 SD → R3 Generic）
+
+Phase 3 ──────────────────────────────────────────────────
+  合并 Sci-Hub + Chinese CDP + English CDP 结果
+  → download_log.md + final summary
+```
+
+> **Sci-Hub 不受任何门控。** 中文门控和英文门控各自独立，分阶段触发。共享同一 CDP 端口 9222。
+
+### 英文路由矩阵（DOI 前缀驱动）
 
 | 轮次 | DOI 前缀 | 出版商 | 策略 | 成功率 |
 |------|----------|--------|------|--------|
-| **Round 1: Sci-Hub** | 不限（2021年前） | 全部 | Sci-Hub CDP | 9/13 镜像可用 |
-| **Round 2: SD CDP** | `10.1016/` | Elsevier | 专有混合策略 | 96% (180/185) |
-| **Round 3: Generic CDP** | `10.1109/` | IEEE | 文章页 stamp URL 提取 + getPDF.jsp 捕获 | 需 SSO，`download_via_ieee.py` 备用 |
+| **R1: Sci-Hub** | 不限（2021年前） | 全部 | Sci-Hub CDP | 9/13 镜像可用 |
+| **R2: SD CDP** | `10.1016/` | Elsevier | 专有混合策略 | 96% (180/185) |
+| **R3: Generic CDP** | `10.1109/` | IEEE | Generic CDP 策略 B（文章页 stamp URL 提取） | 需 SSO |
 | | `10.1002/` | Wiley | pdfdirect URL → 文章页选择器 | 策略A优先 |
 | | `10.1021/` | ACS | 直连 PDF URL → 文章页选择器 | 策略A优先 |
 | | `10.1039/` | RSC | 文章页 articlepdf 选择器 | 策略B为主 |
@@ -96,14 +157,39 @@ python3 scripts/unified_download_router.py --test 10.1021/acsnano.4c00001 --port
 | | `10.3390/` | MDPI | **SKIP** | Akamai封锁 |
 | | `10.2139/` | SSRN | 文章页选择器提取 | 预印本 |
 
+### 中文路由矩阵（source 字段驱动）🆕
+
+| 数据库 | 识别方式 | 下载入口 | 登录方式 |
+|--------|----------|----------|----------|
+| 中国知网 (CNKI) | `source=cnki` + `文章链接` 列 | 文章详情页 → CSS 选择器 → CDP Fetch | 校园网 IP 或 CARSI SSO |
+| 万方数据 (Wanfang) | `source=wanfang` + `文章链接` 列 | 文章详情页 → CSS 选择器 → CDP Fetch | 校园网 IP 或 CARSI SSO |
+
+> **中文论文路由说明：** CNKI/万方论文多数无真实 DOI（使用 `cnki.{hash}` / `wanfang.{hash}` 合成标识符），不进入英文 DOI 路由器。中文管道通过检索文献表的 `source` 列和 `文章链接` 列驱动，与英文管道通过 `ThreadPoolExecutor` 并行启动，共享同一 CDP 端口。缺少 `文章链接` 的论文将被跳过。
+
 ### 命令参考
 
 ```bash
 # 前检查：验证 CDP 浏览器 + 各出版商会话状态
 python3 scripts/unified_download_router.py --check-session --port 9223
 
-# 完整下载流程
+# 查看路由决策（不下载，不受登录门控限制）
+python3 scripts/unified_download_router.py 检索文献表.md --dry-run
+
+# 完整下载流程（带登录门控） 🆕
+python3 scripts/unified_download_router.py 检索文献表.md --output paper-temp/ --require-login-confirm
+
+# 跳过登录门控（仅 OA/免费来源，Agent 需确认无付费墙出版社）
 python3 scripts/unified_download_router.py 检索文献表.md --output paper-temp/
+
+# 中文论文下载 🆕
+python3 scripts/unified_download_router.py 检索文献表.md --chinese-input 检索文献表.md --output paper-temp/ --require-login-confirm
+
+# 仅中文下载（无英文 DOI）
+python3 scripts/unified_download_router.py --chinese-input chinese_papers.json --output paper-temp/
+
+# 中文单篇测试 🆕
+python3 scripts/unified_download_router.py --test-cnki "https://kns.cnki.net/kcms2/article/abstract?..." --port 9223
+python3 scripts/unified_download_router.py --test-wanfang "https://www.wanfangdata.com.cn/details/..." --port 9223
 
 # 跳过某些轮次
 python3 scripts/unified_download_router.py 检索文献表.md --skip-scihub   # 全是新论文
@@ -127,7 +213,8 @@ python3 scripts/unified_download_router.py 检索文献表.md --port 9225
 |---|-----|--------|--------|------|------|
 | 1 | `10.1016/...` | ✅ | SD CDP | 1024KB | paper_001.pdf |
 | 2 | `10.1002/...` | ✅ | Generic CDP | 856KB | paper_002.pdf |
-| 3 | `10.3390/...` | ⏳ | — | - | - |
+| 3 | `cnki.a1b2c3d4...` 🆕 | ✅ | Chinese CDP (CNKI) | 512KB | paper_003.pdf |
+| 4 | `10.3390/...` | ⏳ | — | - | - |
 
 ### 出版社配置
 
@@ -147,18 +234,23 @@ python3 scripts/unified_download_router.py 检索文献表.md --port 9225
 | `auto_sd_downloader.py` | SD 全自动下载 | 只下 Elsevier 论文时 |
 | `generic_publisher_downloader.py` | 通用CDP下载引擎 | 测试特定非SD/IEEE论文 |
 
-### v2.1 核心设计原则
+### 核心设计原则
 
-1. **默认所有论文都有访问权限，下不到是策略问题，不是权限问题。**
-2. **`Fetch.enable` 必须在 `Page.navigate` 之前调用**（IEEE v1.0.1 验证）——否则 Chrome PDF 查看器消费响应体导致捕获失败。
-3. **双浏览器并行可翻倍速度但需隔离标签页。** Chrome 和 Edge 各自独立标签页上下文。
+1. **默认所有论文都有访问权限** — 下不到是策略问题，不是权限问题
+2. **中英文双管道并行** — 登录门控后 `ThreadPoolExecutor` 同时启动英文和中文管道，共享 CDP 端口
+3. **英文按 DOI 前缀路由，中文按 source 字段路由** — 两条线泾渭分明，互不污染
+4. **`Fetch.enable` 必须在 `Page.navigate` 之前调用**（IEEE v1.0.1 验证）— 否则 Chrome PDF 查看器消费响应体
+5. **出版商知识库集中维护** — `config/publishers.toml`，新增出版商只需加一个 `[publishers.xxx]` 段落
+6. **IEEE 已归入 Generic CDP**，`download_via_ieee.py` 保留作为手动 fallback
 
 ---
 
 ## 7. 质量门槛 (Quality Gates)
 
+- [ ] CDP 登录门控已执行：Agent 已提示用户完成机构登录，用户已确认"已登录" 🆕
 - [ ] CDP 浏览器已启动且端口可访问（`curl -s http://127.0.0.1:9223/json/version`）
 - [ ] 会话状态已检查（`--check-session`）
+- [ ] 下载已通过 `--require-login-confirm` 门控参数启动（或 Agent 已手动确认登录） 🆕
 - [ ] 下载记录完整追踪每篇论文状态
 - [ ] 下载失败的论文有明确的失败原因（非"未知错误"）
 
