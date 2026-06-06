@@ -62,7 +62,12 @@ CACHE_MAX_ENTRIES = 500
 # ── Wanfang Web Search ──────────────────────────────────────────────────
 
 WANFANG_SEARCH_URL = "https://www.wanfangdata.com.cn/search/searchList.do"
-WANFANG_CDP_PORT = 9223
+# CDP Chrome port — override via env var CDP_PORT or --cdp-port CLI arg.
+# Default 9222 matches the shared ScienceDirect/Wanfang/CNKI Chrome instance.
+# Run:  bash scripts/start_cdp_chrome.sh --port 9222
+_CDP_PORT = int(os.environ.get("CDP_PORT", "9222"))
+
+WANFANG_CDP_PORT = _CDP_PORT
 WANFANG_SPA_URL = "https://s.wanfangdata.com.cn/paper"
 
 # ── CNKI Web Search ─────────────────────────────────────────────────────
@@ -71,7 +76,7 @@ CNKI_BASE_URL = "https://www.cnki.net"
 CNKI_ADV_SEARCH_URL = "https://kns.cnki.net/kns/AdvSearch?classid=7NS01R8M"
 CNKI_OLD_SEARCH_URL = "http://kns.cnki.net/kns/brief/brief.aspx"
 CNKI_SEARCH_HANDLER = "http://kns.cnki.net/kns/request/SearchHandler.ashx"
-CNKI_CDP_PORT = 9222  # share CDP port with SD/IEEE
+CNKI_CDP_PORT = _CDP_PORT
 
 
 def _cache_key(query, source, limit, strategy=""):
@@ -2093,10 +2098,21 @@ Examples:
     # Cache control
     parser.add_argument("--no-cache", action="store_true", help="Bypass semantic cache for fresh results")
 
+    # CDP port
+    parser.add_argument("--cdp-port", type=int, default=None,
+                        help="CDP Chrome DevTools port (default: $CDP_PORT env or 9222)")
+
     # Scoring
     parser.add_argument("--score", action="store_true", help="Auto-score results with heuristics")
 
     args = parser.parse_args()
+
+    # Override CDP port if --cdp-port provided
+    if args.cdp_port is not None:
+        global _CDP_PORT, WANFANG_CDP_PORT, CNKI_CDP_PORT
+        _CDP_PORT = args.cdp_port
+        WANFANG_CDP_PORT = args.cdp_port
+        CNKI_CDP_PORT = args.cdp_port
 
     # ── Pre-flight mode ──
     if args.preflight:
