@@ -84,7 +84,21 @@
 - **Step 3** (`step_3_search_plan.md`)：英文路由新增 L2 Crossref（必选源），Deep tier 下不得仅用 OpenAlex 完成检索
 - **Step 4** (`step_4_search_score.md`)：新增 CNKI/万方 preflight + CDP/CARSI 登录流程；英文源和中文源拆分独立决策表；新增「用户无机构账号」分支（先确认再给登录 URL）；Crossref 执行命令嵌入检索流
 
+### Step 6d 独立触发词 + 路由表
+
+- **SKILL.md triggers**：新增 Step 6d 独立触发词 11 条（中文：文库大纲对照表、生成文库对照表、文献覆盖热力图、大纲对应关系 PDF、Zotero 大纲对应、文库覆盖图、大纲覆盖报告、文库覆盖热力图；英文：collection coverage heatmap、outline mapping report、Zotero coverage PDF）
+- **路由表**：新增独立 6d 路由行（`"文库大纲对照表" / "覆盖热力图" → agents/step_6_zotero.md`）
+- **概览图**：Step 6 流水线新增 `├─ 6d 对照表 PDF  文库-大纲对照表 + 覆盖热力图 🆕` 节点
+- **设计意图**：此前 6d 仅作为 6c 的隐式产出（无独立触发词），用户无法在 6c 完成后单独重新生成对照表 PDF。现在 6d 可独立触发，支持 `generate_report_pdf.py` 单独调用
+
+### 修改文件
+
+| 文件 | 改动 |
+|------|------|
+| `SKILL.md` | +11 触发词、+1 路由行、概览图 +1 节点 |
+
 ---
+
 
 ## v1.0.5 (2026-06-05)
 

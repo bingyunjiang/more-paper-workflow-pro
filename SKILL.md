@@ -117,6 +117,18 @@ triggers:
   - "Zotero 大纲对齐"
   - "文库关联性"
   - "文献缺口"
+  # Step 6d: 文库-大纲对照表 PDF
+  - "文库大纲对照表"
+  - "生成文库对照表"
+  - "文献覆盖热力图"
+  - "大纲对应关系 PDF"
+  - "Zotero 大纲对应"
+  - "文库覆盖图"
+  - "大纲覆盖报告"
+  - "文库覆盖热力图"
+  - "collection coverage heatmap"
+  - "outline mapping report"
+  - "Zotero coverage PDF"
   # Step 6e: 综述矩阵
   - "综述矩阵"
   - "文献综述矩阵"
@@ -279,6 +291,7 @@ Step 6: Zotero 文库管理              → zotero-架构.md + Zotero 桌面端
   ├─ 6a 生成架构    首次按大纲生成
   ├─ 6b 导入 PDF    将 PDF 拖入对应集合
   ├─ 6c 一致性调整  大纲修订后重对齐文库 🌟
+  ├─ 6d 对照表 PDF  文库-大纲对照表 + 覆盖热力图 🆕
   └─ 6e 综述矩阵    13 列证据矩阵，按证据优先级填充 🆕
 Step 7: 论文写作（paper_type×language双轴）  → 论文初稿.md / .docx
   └─ 6f 风格学习+蓝图 目标期刊风格画像+章节蓝图+写作逻辑矩阵 🆕 v1.1.0
@@ -313,6 +326,7 @@ Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md → 论
 | "引文扩展" / "citation network" | `agents/step_4_search_score.md` | 🆕 子步骤 4e：单轮 1-hop 引文网络扩展 |
 | "下载论文" / Step 5 相关触发词 | `agents/step_5_download.md` | 统一下载路由（Sci-Hub→SD→IEEE→Generic） |
 | "Zotero 文库整理" / Step 6 相关触发词 | `agents/step_6_zotero.md` | 架构生成 + PDF 导入 + 一致性调整 + 综述矩阵 + 期刊风格 |
+| "文库大纲对照表" / "覆盖热力图" | `agents/step_6_zotero.md` | 🆕 子步骤 6d：文库-大纲对照表 PDF + 覆盖热力图 |
 | "写论文" / Step 7 相关触发词 | `agents/step_7_writing.md` | 5 种写作模式 + 引用审计 + 图表生成 |
 | "论文润色" / Step 8 相关触发词 | `agents/step_8_polishing.md` | 四合一精修引擎 + 术语标准化 |
 | 技术问题 / 报错排查 | `agents/known_pitfalls.md` | Python/CDP/Zotero 已知陷阱 |
