@@ -58,6 +58,32 @@
 - CNKI 3/4 + Wanfang 4/4 → 合并 4/4（100%）
 - OpenAlex 10/10（100%），摘要覆盖 76%
 
+### SKILL.md frontmatter 压缩
+
+- description 压缩为单行中英混合（~300 字），末尾保留中文链条保证语义路由跨语言匹配
+- 适配 Codex 只读 `name` + `description` 的解析器行为
+
+### 检索报告全面元数据化
+
+**`scripts/generate_search_report.py` 重构：**
+
+- metadata 优先级：tier/databases/strategy 改为 `meta → summary → default` 三级回退
+- source_breakdown 支持嵌套 dict（`{"openalex": {"raw": 65, "dedup": 55, "named": "OpenAlex"}}`）
+- len(rows) 不再回退为原始检索数，无 metadata 时显示 `—` 而非错误数字
+- PRISMA 流程图支持 `initial_tier_counts`/`expansion_tier_counts` 分阶段展示（初始筛选→扩展→最终）
+- 路由表改为 `_build_source_routing_table()` 按 `source_status` 动态生成
+- PRISMA-S 清单 + 检索策略改为 `_build_strategy_text()` 元数据驱动
+- 记录管理改为 `.md + .xlsx + .bib 导出`，不再默认声称已进 Zotero
+
+**`scripts/search_by_topic.py`：**
+
+- OpenAlex venue 提取容错：source 缺失时填写 `"?"` 而非空字符串
+
+### 检索执行规则修正
+
+- **Step 3** (`step_3_search_plan.md`)：英文路由新增 L2 Crossref（必选源），Deep tier 下不得仅用 OpenAlex 完成检索
+- **Step 4** (`step_4_search_score.md`)：新增 CNKI/万方 preflight + CDP/CARSI 登录流程；英文源和中文源拆分独立决策表；新增「用户无机构账号」分支（先确认再给登录 URL）；Crossref 执行命令嵌入检索流
+
 ---
 
 ## v1.0.5 (2026-06-05)

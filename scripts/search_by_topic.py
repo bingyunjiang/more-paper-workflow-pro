@@ -666,6 +666,7 @@ def _parse_wanfang_results_from_text(text, max_results):
 
             # Extract Chinese abstract — Wanfang SPA renders "摘要：..." in results.
             # Exclude "英文摘要" (English abstract) — Chinese only.
+            abstract = ""
             abs_m = re.search(r'(?<!英文)摘要[：:]\s*(.+?)(?=\n\d+[.．]|\n被引|\n英文摘要|\Z)', info_text, re.DOTALL)
             if not abs_m:
                 # Fallback: look for abstract in individual info_lines

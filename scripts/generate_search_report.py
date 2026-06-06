@@ -267,6 +267,12 @@ def _build_prisma_flow(
     t2 = tier_counts.get("T2", 0)
     t3 = tier_counts.get("T3", 0)
 
+    # ── Expansion staging ──
+    initial_tier = meta.get("initial_tier_counts")  # e.g. {"T1": 28, "T2": 92, "T3": 0}
+    expansion_tier = meta.get("expansion_tier_counts")  # e.g. {"T1": 23, "T2": 19, "T3": 18}
+    expansion_candidates = meta.get("expansion_candidates")
+    has_expansion_staging = initial_tier is not None and expansion_tier is not None
+
     lines = []
     lines.append("### 3.1 PRISMA-S 流程图")
     lines.append("")
@@ -310,31 +316,87 @@ def _build_prisma_flow(
     else:
         lines.append(f"  ▼ 引文验证: (未记录)")
     lines.append("  │")
-    lines.append(f"  ▼ 五维度评分 + Tier 分级:")
-    lines.append(f"  ├─ ⭐ T1 (≥20): {t1} 篇 — 核心文献，必须下载")
-    lines.append(f"  ├─ 📘 T2 (15-19): {t2} 篇 — 重要文献，尽量下载")
-    lines.append(f"  ├─ 📄 T3 (10-14): {t3} 篇 — 参考文献，有选择下载")
-    lines.append(f"  └─ ⬜ T4 (<10): {t4_removed} 篇 — ⛔ 剔除")
-    lines.append("  │")
-    if expansion_added > 0:
-        lines.append(f"  ▼ 引文网络扩展 (1-hop): +{expansion_added} 篇")
+
+    if has_expansion_staging:
+        # ── Staged: show initial screening → expansion → final ──
+        init_t1 = initial_tier.get("T1", 0)
+        init_t2 = initial_tier.get("T2", 0)
+        init_t3 = initial_tier.get("T3", 0)
+        init_total = init_t1 + init_t2 + init_t3
+        lines.append(f"  ▼ 五维度评分 + Tier 分级 (初始筛选): {init_total} 篇")
+        lines.append(f"  ├─ ⭐ T1 (≥20): {init_t1} 篇 — 核心文献，必须下载")
+        lines.append(f"  ├─ 📘 T2 (15-19): {init_t2} 篇 — 重要文献，尽量下载")
+        lines.append(f"  ├─ 📄 T3 (10-14): {init_t3} 篇 — 参考文献")
+        lines.append(f"  └─ ⬜ T4 (<10): {t4_removed} 篇 — ⛔ 剔除")
         lines.append("  │")
-    lines.append(f"  ▼ 最终文献库: {total} 篇 (T1-T3)")
+        seeds = meta.get("expansion_seeds", "?")
+        cand_text = f" (来自 {seeds} 篇 T1 种子)" if seeds != "?" else ""
+        ec = expansion_candidates if expansion_candidates is not None else init_t1 + expansion_added
+        lines.append(f"  ▼ 引文网络扩展候选: {ec} 篇{cand_text}")
+        lines.append("  │")
+        exp_t1 = expansion_tier.get("T1", 0)
+        exp_t2 = expansion_tier.get("T2", 0)
+        exp_t3 = expansion_tier.get("T3", 0)
+        lines.append(f"  ▼ 引文扩展结果 (去重+评分后):")
+        if expansion_added > 0:
+            lines.append(f"  ├─ 实际新增: +{expansion_added} 篇")
+            lines.append(f"  ├─ ⭐ T1: {exp_t1} 篇")
+            lines.append(f"  ├─ 📘 T2: {exp_t2} 篇")
+            lines.append(f"  └─ 📄 T3: {exp_t3} 篇")
+        else:
+            lines.append(f"  └─ 实际新增: 0 篇 (全部重复或 T4)")
+        lines.append("  │")
+        lines.append(f"  ▼ 最终文献库 (初始 + 扩展): {total} 篇 (T1-T3)")
+        lines.append(f"  ├─ ⭐ T1 (≥20): {t1} 篇")
+        lines.append(f"  ├─ 📘 T2 (15-19): {t2} 篇")
+        lines.append(f"  └─ 📄 T3 (10-14): {t3} 篇")
+    else:
+        # ── Simple: all tiers from final rows ──
+        lines.append(f"  ▼ 五维度评分 + Tier 分级:")
+        lines.append(f"  ├─ ⭐ T1 (≥20): {t1} 篇 — 核心文献，必须下载")
+        lines.append(f"  ├─ 📘 T2 (15-19): {t2} 篇 — 重要文献，尽量下载")
+        lines.append(f"  ├─ 📄 T3 (10-14): {t3} 篇 — 参考文献，有选择下载")
+        lines.append(f"  └─ ⬜ T4 (<10): {t4_removed} 篇 — ⛔ 剔除")
+        lines.append("  │")
+        if expansion_added > 0:
+            lines.append(f"  ▼ 引文网络扩展 (1-hop): +{expansion_added} 篇")
+            lines.append("  │")
+        lines.append(f"  ▼ 最终文献库: {total} 篇 (T1-T3)")
     lines.append("```")
     lines.append("")
 
-    # PRISMA-S compliance table
+    # ── PRISMA-S compliance table (metadata-driven) ──
     lines.append("### 3.2 PRISMA-S 检索合规清单")
     lines.append("")
+
+    # Database list from metadata
+    db_list = meta.get("databases") or summary.get("databases") or "OpenAlex"
+    # Source status notes for database description
+    source_status = meta.get("source_status", {})
+    db_notes = []
+    if source_status.get("semantic_scholar") == "429":
+        db_notes.append("Semantic Scholar 跳过")
+    if source_status.get("wanfang") == "attempted_failed":
+        db_notes.append(f"万方已尝试({meta.get('wanfang_fail_reason', '失败')})")
+    db_desc = db_list
+    if db_notes:
+        db_desc += "；" + "；".join(db_notes)
+
+    # Strategy description from metadata
+    strategy_desc = meta.get("search_strategy") or _build_strategy_text(meta)
+
+    # Record management from metadata (don't claim Zotero if not confirmed)
+    record_mgmt = meta.get("record_management", ".md + .xlsx + .bib 导出，后续可导入 Zotero")
+
     lines.append("| # | 检查项 | 状态 | 说明 |")
     lines.append("|---|--------|:----:|------|")
     checks = [
-        (1, "数据库选择", "✅", f"已使用: {summary.get('databases', 'OpenAlex, Semantic Scholar, Crossref')}"),
-        (2, "多源策略", "✅", "relevance + cited + recent 三策略线"),
+        (1, "数据库选择", "✅", f"已使用: {db_desc}"),
+        (2, "多源策略", "✅", strategy_desc),
         (3, "检索日期范围", "✅", f"执行日期: {summary.get('search_date', datetime.now().strftime('%Y-%m-%d'))}"),
         (4, "完整检索式记录", "✅", "已记录在检索方案 (Step 3)"),
         (5, "去重方法", "✅", "DOI 主键 + title+first_author+year 组合键"),
-        (6, "记录管理", "✅", "Zotero 文库 + .bib 导出"),
+        (6, "记录管理", "✅", record_mgmt),
         (7, "筛选标准", "✅", "五维度评分 + Tier 1-4 分级"),
         (8, "灰色文献", "⬜", "非本自动化检索范围"),
         (9, "手动检索", "⬜", "非本自动化检索范围"),
@@ -354,6 +416,144 @@ def _build_prisma_flow(
 
 
 # ── Report builder ──────────────────────────────────────────────────────────
+
+def _build_strategy_text(meta: Dict) -> str:
+    """Build strategy description from metadata, reflecting actual execution."""
+    source_status = meta.get("source_status", {})
+    parts = []
+
+    # English sources used
+    en_sources = []
+    if source_status.get("openalex") == "ok":
+        en_sources.append("OpenAlex")
+    if source_status.get("crossref") == "ok":
+        en_sources.append("Crossref")
+    if source_status.get("semantic_scholar") == "ok":
+        en_sources.append("Semantic Scholar")
+    if en_sources:
+        parts.append("英文 " + " + ".join(en_sources) + " 分层检索")
+
+    # Chinese sources used
+    cn_sources = []
+    cn_auth = ""
+    if source_status.get("cnki") in ("ok", "carsi_logged_in"):
+        cn_sources.append("CNKI")
+        if source_status.get("cnki") == "carsi_logged_in":
+            cn_auth = "/CARSI"
+    if source_status.get("wanfang") in ("ok", "carsi_logged_in"):
+        cn_sources.append("万方")
+        if not cn_auth and source_status.get("wanfang") == "carsi_logged_in":
+            cn_auth = "/CARSI"
+    if cn_sources:
+        parts.append(f"中文 {' + '.join(cn_sources)}{cn_auth} 登录检索" if cn_auth else f"中文 {' + '.join(cn_sources)} IP 直连检索")
+
+    # Expansion
+    if meta.get("expansion_added", 0) > 0:
+        parts.append(f"T1 种子 1-hop 引文扩展 (+{meta['expansion_added']} 篇)")
+
+    # Failed/skipped sources
+    notes = []
+    if source_status.get("semantic_scholar") == "429":
+        notes.append("Semantic Scholar 429 已跳过")
+    if source_status.get("wanfang") == "attempted_failed":
+        reason = meta.get("wanfang_fail_reason", "失败")
+        notes.append(f"万方已尝试但{reason}")
+    if source_status.get("cnki") == "skipped_no_account":
+        notes.append("CNKI 用户无机构账号已跳过")
+    if source_status.get("crossref") == "fail":
+        notes.append("Crossref 不可达")
+
+    result = "；".join(parts)
+    if notes:
+        result += "。" + "；".join(notes)
+    return result or "relevance + cited + recent"
+
+
+def _build_source_routing_table(meta: Dict, tier_param: str) -> List[str]:
+    """Build a dynamic L1→L2→L3 routing table from source_status metadata."""
+    source_status = meta.get("source_status", {})
+    tier_limits = {"quick": 30, "standard": 50, "deep": 100}
+    limit = tier_limits.get(tier_param, 50)
+
+    lines = []
+    lines.append("| 层级 | 数据库 | 策略 | 每策略上限 | 状态 / 说明 |")
+    lines.append("|:----:|--------|------|:----------:|------------|")
+
+    # L1: OpenAlex — always present
+    oa_ok = source_status.get("openalex", "ok") == "ok"
+    lines.append(
+        f"| L1 | OpenAlex | relevance + cited + recent | {limit} "
+        f"| {'✅ 已执行' if oa_ok else '❌ 不可达'} |")
+
+    # L2: Crossref
+    cr_status = source_status.get("crossref", "ok")
+    cr_ok = cr_status == "ok"
+    cr_note = {
+        "deep": "Deep tier 必跑",
+        "standard": "条件触发",
+    }.get(tier_param, "条件触发")
+    lines.append(
+        f"| L2 | Crossref | relevance | {limit} "
+        f"| {'✅ 已执行' if cr_ok else '⚠️ 跳过 (' + cr_status + ')'} | {cr_note} |")
+
+    # L2: Semantic Scholar
+    ss_status = source_status.get("semantic_scholar")
+    if ss_status:
+        if ss_status == "429":
+            lines.append("| L2 | Semantic Scholar | — | — | ⬜ 跳过 (HTTP 429) |")
+        elif ss_status == "ok":
+            lines.append(
+                f"| L2 | Semantic Scholar | relevance | {limit} "
+                f"| ✅ 已执行 (影响力/引文富集) |")
+        else:
+            lines.append(
+                f"| L2 | Semantic Scholar | — | — "
+                f"| ⚠️ 跳过 ({ss_status}) |")
+
+    # Chinese: CNKI
+    cnki_status = source_status.get("cnki")
+    if cnki_status:
+        if cnki_status == "ok":
+            lines.append(
+                f"| L1 (中) | CNKI | relevance + cited | {limit} "
+                f"| ✅ IP 直连 |")
+        elif cnki_status == "carsi_logged_in":
+            lines.append(
+                f"| L1 (中) | CNKI | relevance + cited | {limit} "
+                f"| ✅ CARSI 登录 |")
+        elif cnki_status in ("skipped_no_account", "skipped"):
+            lines.append(
+                f"| L1 (中) | CNKI | — | — "
+                f"| ⬜ 跳过 ({'无机构账号' if cnki_status == 'skipped_no_account' else '用户选择'}) |")
+
+    # Chinese: Wanfang
+    wf_status = source_status.get("wanfang")
+    if wf_status:
+        if wf_status == "ok":
+            lines.append(
+                f"| L2 (中) | Wanfang Data | relevance | {limit} "
+                f"| ✅ IP 直连 |")
+        elif wf_status == "carsi_logged_in":
+            lines.append(
+                f"| L2 (中) | Wanfang Data | relevance | {limit} "
+                f"| ✅ CARSI 登录 |")
+        elif wf_status == "attempted_failed":
+            reason = meta.get("wanfang_fail_reason", "失败")
+            lines.append(
+                f"| L2 (中) | Wanfang Data | — | — "
+                f"| ⚠️ 已尝试，{reason} |")
+        elif wf_status in ("skipped_no_account", "skipped"):
+            lines.append(
+                f"| L2 (中) | Wanfang Data | — | — "
+                f"| ⬜ 跳过 ({'无机构账号' if wf_status == 'skipped_no_account' else '用户选择'}) |")
+
+    # arXiv
+    if meta.get("arxiv_enabled"):
+        lines.append(
+            f"| L2* | arXiv | relevance (T-0~T-4) | 20 "
+            f"| ✅ CS/AI 跨域信号 |")
+
+    return lines
 
 def build_report(
     rows: List[Dict],
@@ -398,10 +598,15 @@ def build_report(
     # Key metrics table
     lines.append("| 指标 | 值 |")
     lines.append("|------|-----|")
+    # ── Metadata priority: meta → summary → default ──
+    tier_display = (meta.get("tier") or summary.get("tier") or "standard").upper()
+    db_display = meta.get("databases") or summary.get("databases") or "OpenAlex"
+    strategy_display = meta.get("search_strategy") or _build_strategy_text(meta)
+
     lines.append(f"| 检索日期 | {summary.get('search_date', '?')} |")
-    lines.append(f"| 检索深度 | {summary.get('tier', 'standard').upper()} |")
-    lines.append(f"| 数据库 | {summary.get('databases', 'OpenAlex, Semantic Scholar, Crossref')} |")
-    lines.append(f"| 检索策略 | relevance + cited + recent |")
+    lines.append(f"| 检索深度 | {tier_display} |")
+    lines.append(f"| 数据库 | {db_display} |")
+    lines.append(f"| 检索策略 | {strategy_display} |")
 
     # Pipeline counts — show "—" when metadata not provided
     lines.append(f"| 原始检索结果 | {raw_total if raw_total is not None else '—'} 篇 |")
@@ -435,20 +640,23 @@ def build_report(
 
     lines.append("### 2.1 分层检索路由 (L1 → L2 → L3)")
     lines.append("")
-    lines.append("| 层级 | 数据库 | 策略 | 每策略上限 | 触发条件 |")
-    lines.append("|:----:|--------|------|:----------:|---------|")
-    tier_param = summary.get("tier", "standard").lower()
-    if tier_param == "quick":
-        limit_val = 30
-    elif tier_param == "deep":
-        limit_val = 100
+    tier_param = (meta.get("tier") or summary.get("tier") or "standard").lower()
+    source_status = meta.get("source_status", {})
+    if source_status:
+        # Dynamic table from actual execution status
+        routing_lines = _build_source_routing_table(meta, tier_param)
+        lines.extend(routing_lines)
     else:
-        limit_val = 50
-    lines.append(f"| L1 | OpenAlex | relevance + cited + recent | {limit_val} | 所有子课题 |")
-    lines.append(f"| L2 | Semantic Scholar | relevance | {limit_val} | CS/AI 交叉子领域 |")
-    lines.append(f"| L3 | Crossref | relevance | {limit_val // 2} | L1+L2 < 30 时回退 |")
-    if meta.get("arxiv_enabled"):
-        lines.append(f"| L2* | arXiv | relevance (T-0~T-4) | 20 | CS/AI 跨域信号 |")
+        # Fallback: static table when no metadata
+        limit_val = {"quick": 30, "standard": 50, "deep": 100}.get(tier_param, 50)
+        lines.append("| 层级 | 数据库 | 策略 | 每策略上限 | 触发条件 |")
+        lines.append("|:----:|--------|------|:----------:|---------|")
+        lines.append(f"| L1 | OpenAlex | relevance + cited + recent | {limit_val} | 所有子课题 |")
+        lines.append(f"| L2 | Crossref | relevance | {limit_val} | Deep tier 必跑 / Standard 条件触发 |")
+        lines.append(f"| L2 | Semantic Scholar | relevance | {limit_val} | CS/AI 交叉子领域 |")
+        lines.append(f"| L3 | PubMed | relevance | {limit_val // 2} | 仅医工交叉 |")
+        if meta.get("arxiv_enabled"):
+            lines.append("| L2* | arXiv | relevance (T-0~T-4) | 20 | CS/AI 跨域信号 |")
     lines.append("")
 
     lines.append("### 2.2 检索式结构（概念块布尔）")

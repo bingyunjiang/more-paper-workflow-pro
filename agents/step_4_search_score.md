@@ -71,45 +71,36 @@
 
 > **中文查询路由：** 查询含中文字符时，CNKI（L1 主检索）+ Wanfang Data（L2 补充）双路检索。
 
-### 🔴 Preflight 检查（先跑，按结果分流）
+### 英文源执行规则（公开 API，无需认证，直接跑）
 
-> 启动检索前，**先执行一次 `--preflight`**。英文源和中文源的性质不同，处理方式分开：
-> - **英文源**（OpenAlex/Crossref/Semantic Scholar）：公开 API，无需账号，只做连通性检查。
-> - **中文源**（CNKI/万方）：需要 IP 直连或 CARSI 机构登录，涉及用户交互。
+> 英文源全部是公开 API，与机构账号无关。执行时按 tier 选择启用的源，遇错处理即可，无需等待用户。
 
-**Preflight 命令：**
-```bash
-python3 scripts/search_by_topic.py --preflight
+| 数据源 | Deep tier | Standard tier | Quick tier | 遇错行为 |
+|--------|-----------|---------------|-----------|---------|
+| **OpenAlex** | ✅ 必跑 | ✅ 必跑 | ✅ 必跑 | FAIL → ❌ 中止（唯一不可跳过） |
+| **Crossref** | ✅ **必跑** | ⚠️ OpenAlex < 30 或 SemSch 429 → 必跑 | ⬜ 跳过 | FAIL → 报告标注缺失 |
+| **Semantic Scholar** | ✅ 跑 | ✅ 跑 | ⬜ 跳过 | 429 → ⬜ 跳过不阻塞 |
+| **arXiv** | ✅ 仅 CS/AI 信号 | 同左 | ⬜ 跳过 | FAIL → 跳过 |
+| **PubMed** | ✅ 仅医工交叉 | 同左 | ⬜ 跳过 | FAIL → 跳过 |
+
+> **规则：** OpenAlex 唯一不可跳过；Crossref deep tier 必跑；Semantic Scholar 429 不阻塞。
+
+---
+
+### 中文源 preflight + 认证（仅中文查询触发）
+
+> 中文源（CNKI/万方）在校园网外需要 CARSI 机构登录。**中文源的问题不阻塞英文源——英文源先行，中文源认证同步处理。**
+
+```
+执行顺序：
+  1. 🏃 英文源命令先行（上表），不等待中文源
+  2. 🔍 同时跑中文源 preflight：python3 scripts/search_by_topic.py --preflight
+  3. 📊 中文 preflight 结果：
+     ├─ IP 直连 OK  → 直接跑 CNKI/万方命令
+     └─ CDP/CARSI   → 进入下方认证流程
 ```
 
----
-
-### 英文源路由（连通性检查，无需用户交互）
-
-> 英文源全部是公开 API，与机构账号无关。preflight 只判断 API 是否可达。
-
-| 数据源 | 连通性 | Deep tier | Standard tier | Quick tier |
-|--------|:------:|-----------|---------------|-----------|
-| **OpenAlex** | OK | ✅ 必跑 | ✅ 必跑 | ✅ 必跑 |
-| **OpenAlex** | FAIL | ❌ 中止，报告错误 | ❌ 中止，报告错误 | ❌ 中止，报告错误 |
-| **Crossref** | OK | ✅ **必跑**（不可跳过） | ⚠️ OpenAlex < 30 + Semantic Scholar 429 → 必跑；否则可选 | ⬜ 跳过 |
-| **Crossref** | FAIL | ⚠️ 报告标注「Crossref 元数据缺失」 | ⚠️ 同左 | ⬜ 跳过 |
-| **Semantic Scholar** | OK | ✅ 跑（影响力/引文富集） | ✅ 跑（影响力/引文富集） | ⬜ 跳过 |
-| **Semantic Scholar** | 429 | ⬜ **跳过，不阻塞** | ⬜ **跳过，不阻塞** | ⬜ 跳过 |
-| **arXiv** | OK | ✅ 仅 CS/AI 跨域信号 | 同左 | ⬜ 跳过 |
-| **PubMed** | OK | ✅ 仅医工交叉 | 同左 | ⬜ 跳过 |
-
-> **英文源关键规则：**
-> - **OpenAlex 是唯一不可跳过的源**——挂了就中止，其他源补不了。
-> - **Crossref 在 deep tier 下是必选**——提供 DOI 归一化和出版社元数据，OpenAlex/Semantic Scholar 常缺这些字段。
-> - **Semantic Scholar 429 不阻塞**——跳过即可，用 Crossref 补足。
-> - 英文源全程无需用户登录，连通性检查结果直接决定执行/跳过，不暂停。
-
----
-
-### 中文源路由（认证检查，涉及用户交互）
-
-> CNKI/万方在校园网外需要 CARSI 机构登录。preflight 判断访问模式后，**先问用户是否有账号**，再决定路径。
+**中文源路由决策：**
 
 | 数据源 | Preflight 结果 | 行为 |
 |--------|:------------:|------|
@@ -122,13 +113,7 @@ python3 scripts/search_by_topic.py --preflight
 | **Wanfang** | 用户无机构账号 | 📝 确认后跳过，报告标注「中文源: 用户无机构账号」 |
 | **Wanfang** | 用户选择跳过 | 📝 报告标注「中文源: 用户跳过」 |
 
-> **中文源关键规则：**
-> - 中文源只在查询含中文字符时触发，纯英文查询不涉及此表。
-> - **IP 直连（校园网/VPN）无需用户操作**，直接执行检索。
-> - **不要假设用户一定有 CARSI 账号**——CDP/CARSI 时先问，再给登录 URL。
-> - 用户无账号或选择跳过 → 不阻塞，英文源照常执行，报告中注明中文源缺失原因。
-
-**中文源登录流程（CDP/CARSI 时——先确认账号，再决定路径）：**
+**中文源认证流程（CDP/CARSI 时——先确认账号，再决定路径）：**
 
 ```
 🔐 检测到 CNKI/万方需要 CARSI 机构登录。
