@@ -122,10 +122,44 @@ def _cache_set(key, data):
     os.replace(tmp, os.path.join(CACHE_DIR, key + ".json"))
 
 
+# ── Abstract Utilities ─────────────────────────────────────────────────────
+
+# Method detection keywords for abstract-based scoring
+_experiment_kw = {"experiment", "experimental", "test rig", "prototype",
+                  "measurement", "measured", "tested", "fabricated",
+                  "实验", "测试", "样机", "实测"}
+_simulation_kw = {"simulation", "cfd", "fem", "finite element", "numerical",
+                  "simulated", "computational", "仿真", "数值模拟", "有限元"}
+
+
+def _reconstruct_abstract(inverted_index):
+    """Reconstruct abstract text from OpenAlex's abstract_inverted_index.
+
+    OpenAlex stores abstracts as a word→positions map:
+      {"the": [0, 5], "quick": [1], "brown": [2], ...}
+    This reconstructs the original sentence order.
+
+    Returns empty string if no abstract available.
+    """
+    if not inverted_index:
+        return ""
+    word_positions = {}
+    for word, positions in inverted_index.items():
+        for pos in positions:
+            word_positions[pos] = word
+    if not word_positions:
+        return ""
+    return " ".join(word_positions[i] for i in sorted(word_positions))
+
+
 # ── API Search Functions ───────────────────────────────────────────────────
 
 def search_semantic_scholar(query, limit=20, use_cache=True):
-    """Search Semantic Scholar API. Free, no key needed for basic search."""
+    """Search Semantic Scholar API.
+
+    Without API key: 1 req/s, 100/5min. With key: 10 req/s, 1000/5min.
+    Set S2_API_KEY environment variable for higher limits.
+    """
     if use_cache:
         key = _cache_key(query, "semantic_scholar", limit)
         cached = _cache_get(key)
@@ -139,15 +173,50 @@ def search_semantic_scholar(query, limit=20, use_cache=True):
         "fields": "title,authors,externalIds,year,venue,citationCount,influentialCitationCount,abstract"
     })
     url = f"https://api.semanticscholar.org/graph/v1/paper/search?{params}"
-    req = urllib.request.Request(url, headers={"User-Agent": "Hermes/1.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read())
-    except Exception as e:
-        print(f"  Semantic Scholar error: {e}", flush=True)
-        return []
+    api_key = os.environ.get("S2_API_KEY", "")
+    headers = {"User-Agent": "Hermes/1.0"}
+    if api_key:
+        headers["x-api-key"] = api_key
 
     results = []
+    data = None
+    rate_limited = False
+    for attempt in range(4):
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                if resp.status == 429:
+                    rate_limited = True
+                    wait = 2 ** attempt
+                    print(f"  Semantic Scholar: rate limited, retrying in {wait}s...", flush=True)
+                    time.sleep(wait)
+                    continue
+                data = json.loads(resp.read())
+            break
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                rate_limited = True
+                wait = 2 ** attempt
+                print(f"  Semantic Scholar: rate limited (429), retrying in {wait}s...", flush=True)
+                time.sleep(wait)
+                continue
+            print(f"  Semantic Scholar error: HTTP {e.code}", flush=True)
+            return []
+        except (urllib.error.URLError, OSError) as e:
+            if attempt < 3:
+                wait = 2 ** attempt
+                print(f"  Semantic Scholar: connection error, retrying in {wait}s...", flush=True)
+                time.sleep(wait)
+                continue
+            print(f"  Semantic Scholar error: {e}", flush=True)
+            return []
+        except Exception as e:
+            print(f"  Semantic Scholar error: {e}", flush=True)
+            return []
+
+    if data is None:
+        return []
+
     for p in data.get("data", []):
         ext_ids = p.get("externalIds", {})
         doi = ext_ids.get("DOI", "")
@@ -157,15 +226,24 @@ def search_semantic_scholar(query, limit=20, use_cache=True):
         authors = [a.get("name", "?") for a in p.get("authors", [])]
         citations = p.get("citationCount", 0) or 0
         influential_citations = p.get("influentialCitationCount", 0) or 0
+        abstract = p.get("abstract", "") or ""
         if doi:
             results.append({
                 "doi": doi, "title": title, "year": year, "venue": venue,
                 "authors": authors, "citations": citations,
                 "influential_citations": influential_citations,
+                "abstract": abstract,
                 "source": "semantic_scholar"
             })
     if use_cache:
         _cache_set(key, results)
+
+    if rate_limited and not results:
+        print("  💡 Semantic Scholar 限流 — 免费申请 API Key 可提升 10 倍额度：",
+              flush=True)
+        print("     https://www.semanticscholar.org/product/api#api-key-form", flush=True)
+        print("     拿到后设置: export S2_API_KEY=\"你的key\"", flush=True)
+
     return results
 
 
@@ -213,6 +291,7 @@ def search_crossref(query, limit=20, use_cache=True):
             results.append({
                 "doi": doi, "title": title, "year": year, "venue": publisher,
                 "authors": authors, "citations": 0,
+                "abstract": item.get("abstract", "") or "",
                 "source": "crossref"
             })
     if use_cache:
@@ -234,13 +313,25 @@ def search_openalex(query, limit=20, use_cache=True):
         "sort": "relevance_score:desc"
     })
     url = f"https://api.openalex.org/works?{params}"
-    req = urllib.request.Request(url, headers={"User-Agent": "Hermes/1.0"})
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read())
-    except Exception as e:
-        print(f"  OpenAlex error: {e}", flush=True)
-        return []
+
+    results = []
+    for attempt in range(4):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Hermes/1.0"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+            break
+        except (urllib.error.URLError, OSError, ConnectionError) as e:
+            if attempt < 3:
+                wait = 2 ** attempt
+                print(f"  OpenAlex: connection error, retrying in {wait}s...", flush=True)
+                time.sleep(wait)
+                continue
+            print(f"  OpenAlex error: {e}", flush=True)
+            return []
+        except Exception as e:
+            print(f"  OpenAlex error: {e}", flush=True)
+            return []
 
     results = []
     for p in data.get("results", []):
@@ -260,10 +351,13 @@ def search_openalex(query, limit=20, use_cache=True):
             if name:
                 authors.append(name)
         citations = p.get("cited_by_count", 0) or 0
+        abstract_index = p.get("abstract_inverted_index")
+        abstract = _reconstruct_abstract(abstract_index) if abstract_index else ""
         if doi:
             results.append({
                 "doi": doi, "title": title, "year": year, "venue": venue,
                 "authors": authors, "citations": citations,
+                "abstract": abstract,
                 "source": "openalex"
             })
     if use_cache:
@@ -379,6 +473,7 @@ def _parse_wanfang_html(html, max_results):
                 "venue": venue,
                 "authors": authors,
                 "citations": citations,
+                "abstract": "",
                 "source": "wanfang",
             })
     except Exception:
@@ -426,6 +521,7 @@ def _parse_wanfang_html_regex(html, max_results, results):
             "venue": "",
             "authors": [],
             "citations": 0,
+            "abstract": "",
             "source": "wanfang",
         })
 
@@ -569,6 +665,18 @@ def _parse_wanfang_results_from_text(text, max_results):
             if cit_m:
                 citations = int(cit_m.group(1))
 
+            # Extract Chinese abstract — Wanfang SPA renders "摘要：..." in results.
+            # Exclude "英文摘要" (English abstract) — Chinese only.
+            abs_m = re.search(r'(?<!英文)摘要[：:]\s*(.+?)(?=\n\d+[.．]|\n被引|\n英文摘要|\Z)', info_text, re.DOTALL)
+            if not abs_m:
+                # Fallback: look for abstract in individual info_lines
+                for il in info_lines:
+                    if il.startswith("摘要") and len(il) > 10:
+                        abstract = il.replace("摘要：", "").replace("摘要:", "").strip()
+                        break
+            else:
+                abstract = abs_m.group(1).strip()
+
             results.append({
                 "doi": doi,
                 "title": title,
@@ -576,6 +684,7 @@ def _parse_wanfang_results_from_text(text, max_results):
                 "venue": venue,
                 "authors": authors,
                 "citations": citations,
+                "abstract": abstract,
                 "source": "wanfang",
             })
 
@@ -874,6 +983,7 @@ def _parse_cnki_html(html, max_results):
                 "venue": venue,
                 "authors": authors,
                 "citations": citations,
+                "abstract": "",
                 "source": "cnki",
                 "_download_url": download_url,
                 "_export_id": export_id,
@@ -1026,6 +1136,9 @@ def _try_cnki_cdp(query, limit=20):
     No captcha issues unlike the new kns8s SPA.
     Falls back gracefully if CDP browser is unavailable.
     """
+    # Brief delay to avoid triggering CNKI anti-bot rate limiting
+    time.sleep(3)
+
     try:
         from cdp_utils import check_cdp
         if not check_cdp(CNKI_CDP_PORT):
@@ -1191,17 +1304,23 @@ def _try_cnki_cdp(query, limit=20):
             "params": {"expression": extract_js},
         }))
         r = json.loads(ws.recv())
-        ws.close()
 
         raw_val = r.get("result", {}).get("result", {}).get("value", "{}")
         parsed = json.loads(raw_val) if isinstance(raw_val, str) else raw_val
         if isinstance(parsed, dict) and "results" in parsed:
             results = parsed["results"]
             print(f"  CNKI CDP: {len(results)} results found", flush=True)
-            return results
-        if isinstance(parsed, dict) and "error" in parsed:
+        elif isinstance(parsed, dict) and "error" in parsed:
+            ws.close()
             return None
-        return []
+        else:
+            ws.close()
+            return []
+
+        # Step 6: Navigate to each paper's detail page to extract abstract
+        _extract_cnki_abstracts(ws, results, limit)
+        ws.close()
+        return results
 
     except Exception:
         try:
@@ -1209,6 +1328,79 @@ def _try_cnki_cdp(query, limit=20):
         except Exception:
             pass
         return None
+
+
+def _extract_cnki_abstracts(ws, results, limit):
+    """For each CNKI search result, navigate to detail page and extract abstract.
+
+    Navigates to kcms2/article/abstract pages sequentially,
+    extracts .abstract-text content, and populates the result dicts.
+    """
+    collected = 0
+    for i, r in enumerate(results):
+        if r.get("abstract"):
+            collected += 1
+            continue  # already has abstract (e.g., from cache)
+        href = r.get("_href", "")
+        if not href or "kcms2" not in href:
+            continue
+        if collected >= limit:
+            break
+
+        # Navigate to paper detail page
+        ws.send(json.dumps({
+            "id": 100 + i, "method": "Page.navigate",
+            "params": {"url": href},
+        }))
+        json.loads(ws.recv())
+
+        # Wait for detail page to load (.abstract-text or .brief h1)
+        abstract_text = ""
+        for _ in range(10):
+            time.sleep(1)
+            ws.send(json.dumps({
+                "id": 200 + i, "method": "Runtime.evaluate",
+                "params": {"expression": (
+                    "var a=document.querySelector('.abstract-text');"
+                    "a?a.innerText.trim():''"
+                )},
+            }))
+            resp = json.loads(ws.recv())
+            abstract_text = resp.get("result", {}).get("result", {}).get("value", "")
+            if abstract_text:
+                break
+            # Fallback: check if title loaded
+            ws.send(json.dumps({
+                "id": 300 + i, "method": "Runtime.evaluate",
+                "params": {"expression": (
+                    "var h=document.querySelector('.brief h1');"
+                    "h?h.innerText.trim():''"
+                )},
+            }))
+            resp = json.loads(ws.recv())
+            title_text = resp.get("result", {}).get("result", {}).get("value", "")
+            if title_text and "网络首发" not in title_text:
+                continue  # page loaded but no abstract yet, keep waiting
+
+        if abstract_text:
+            # Also grab keywords
+            ws.send(json.dumps({
+                "id": 400 + i, "method": "Runtime.evaluate",
+                "params": {"expression": (
+                    "Array.from(document.querySelectorAll('p.keywords a'))"
+                    ".map(function(a){return a.innerText.replace(/;$/,'').trim()})"
+                    ".join('; ')"
+                )},
+            }))
+            kw_resp = json.loads(ws.recv())
+            keywords = kw_resp.get("result", {}).get("result", {}).get("value", "")
+
+            r["abstract"] = abstract_text
+            if keywords:
+                r["_keywords"] = keywords
+            collected += 1
+
+        time.sleep(0.5)
 
 
 def search_cnki(query, limit=20, use_cache=True, strategy=""):
@@ -1802,6 +1994,9 @@ def export_bibtex(results, output_path, tier_map=None):
         lines.append(f"  year      = {{{year}}},")
         if doi:
             lines.append(f"  doi       = {{{doi}}},")
+        abstract = r.get("abstract", "")
+        if abstract:
+            lines.append(f"  abstract  = {{{_escape_bibtex(abstract)}}},")
         if note:
             lines.append(f"  note      = {{{_escape_bibtex(note)}}},")
         lines.append("}")
@@ -1938,16 +2133,30 @@ def score_results(results, topic_keywords):
         score = 0
         reasons = []
 
-        # 1. Topic match (title keyword overlap)
+        # 1. Topic match (title + abstract keyword overlap)
         title_lower = r.get("title", "").lower()
-        kw_matches = sum(1 for kw in topic_keywords if kw.lower() in title_lower)
-        topic_score = min(5, kw_matches * 2)
+        abstract = r.get("abstract", "") or ""
+        abstract_lower = abstract.lower()
+        kw_matches_title = sum(1 for kw in topic_keywords if kw.lower() in title_lower)
+        kw_matches_abstract = sum(1 for kw in topic_keywords if kw.lower() in abstract_lower)
+        # Title match counts double, abstract match counts once
+        topic_score = min(5, kw_matches_title * 2 + kw_matches_abstract)
         score += topic_score
         if topic_score >= 4:
             reasons.append("title_match")
 
-        # 2. Method match (heuristic — venue + title signals)
-        method_score = 3  # default
+        # 2. Method match (from abstract text)
+        method_score = 2  # default low (no abstract or no signal)
+        if abstract:
+            abs_lower = abstract_lower
+            has_experiment = any(w in abs_lower for w in _experiment_kw)
+            has_simulation = any(w in abs_lower for w in _simulation_kw)
+            if has_experiment:
+                method_score = 5
+            elif has_simulation:
+                method_score = 3
+            else:
+                method_score = 3  # has abstract but no clear method signal
         score += method_score
 
         # 3. Source quality (heuristic by venue presence)
@@ -2056,8 +2265,11 @@ Examples:
                         default="all",
                         help="Search source (default: all). Use --t1/--t2/--t3 for routing.")
     parser.add_argument("--t1", help="Primary source (T1). Options: semantic_scholar, crossref, openalex, wanfang, cnki")
-    parser.add_argument("--t2", help="Secondary source (T2), used if T1 returns < --min-results")
+    parser.add_argument("--t2", help="Secondary source (T2), used if T1 returns < --min-results "
+                        "(unless --parallel is set)")
     parser.add_argument("--t3", help="Last resort source (T3)")
+    parser.add_argument("--parallel", action="store_true",
+                        help="Always run T1+T2 (never skip T2). Recommended for Chinese routing.")
     parser.add_argument("--min-results", type=int, default=30,
                         help="Min results from T1 before falling back to T2 (default: 30)")
     parser.add_argument("--limit", type=int, default=20, help="Max results per source (default: 20)")
@@ -2244,9 +2456,10 @@ Examples:
                 print(f"  [{label}] {src_canon}: {len(results)} results", flush=True)
                 all_results.extend(results)
 
-                # If T1 returned enough, skip T2/T3
-                if label == "T1" and len(results) >= args.min_results:
-                    print(f"  T1 returned >= {args.min_results}, skipping T2/T3 fallback")
+                # If T1 returned enough, skip T2/T3 — unless --parallel is set
+                if not args.parallel and label == "T1" and len(results) >= args.min_results:
+                    print(f"  T1 returned >= {args.min_results}, skipping T2/T3 "
+                          f"(use --parallel to force both)")
                     break
         else:
             # Legacy mode: --source
@@ -2286,16 +2499,19 @@ Examples:
         tier_map = score_results(unique, keywords)
 
     # Print summary
-    print(f"\nFound {len(unique)} unique papers (across {len(all_results)} raw hits):")
-    print(f"{'DOI':<35} {'Yr':<5} {'Src':<12} {'Score':<6} {'Tier':<7} Title")
-    print("-" * 110)
+    has_abstract = sum(1 for r in unique if r.get("abstract"))
+    print(f"\nFound {len(unique)} unique papers ({has_abstract} with abstracts) "
+          f"(across {len(all_results)} raw hits):")
+    print(f"{'DOI':<35} {'Yr':<5} {'Src':<12} {'Score':<6} {'Tier':<7} {'Abs':<4} Title")
+    print("-" * 115)
 
     for r in unique[:50]:
         doi_short = r["doi"][:33] + ".." if len(r.get("doi", "")) > 35 else r.get("doi", "")
         title_short = r["title"][:45] + ".." if len(r.get("title", "")) > 45 else r.get("title", "")
         score = r.get("_score", "?")
         tier = r.get("_tier", "?")
-        print(f"{doi_short:<35} {str(r.get('year', '?')):<5} {r.get('source', '?')[:12]:<12} {str(score):<6} {tier:<7} {title_short}")
+        abs_flag = "✅" if r.get("abstract") else "—"
+        print(f"{doi_short:<35} {str(r.get('year', '?')):<5} {r.get('source', '?')[:12]:<12} {str(score):<6} {tier:<7} {abs_flag:<4} {title_short}")
 
     # Output
     if args.export_bib:

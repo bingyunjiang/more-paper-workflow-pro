@@ -126,6 +126,8 @@ def _parse_md_table(md_path: str) -> list[dict]:
             col_map["authors"] = idx
         elif "journal" in col_clean or "期刊" in col_clean or "venue" in col_clean:
             col_map["journal"] = idx
+        elif "abstract" in col_clean or "摘要" in col_clean:
+            col_map["abstract"] = idx
 
     # Parse data rows
     for row_line in best_data:
@@ -202,6 +204,7 @@ def _generate_xlsx(rows: list[dict], output_path: str):
     columns = [
         ("doi", "DOI"),
         ("title", "标题"),
+        ("abstract", "摘要"),
         ("authors", "作者"),
         ("year", "年份"),
         ("journal", "期刊/会议"),
@@ -257,10 +260,13 @@ def _generate_xlsx(rows: list[dict], output_path: str):
             # Color-code Tier column
             if key == "tier" and value in tier_fills:
                 cell.fill = tier_fills[value]
+            # Wrap text for abstract column
+            if key == "abstract":
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
 
     # Column widths
     col_widths = {
-        "doi": 38, "title": 60, "authors": 25, "year": 7,
+        "doi": 38, "title": 60, "abstract": 80, "authors": 25, "year": 7,
         "journal": 30, "source": 14, "score": 7, "tier": 7,
         "citations": 10, "influential_citations": 13, "flags": 12, "subtopic": 14,
     }
@@ -322,6 +328,10 @@ def _generate_bibtex(rows: list[dict], output_path: str):
             author_list = [authors_raw] if authors_raw else ["Unknown"]
         author_str = " and ".join(author_list)
 
+        abstract = row.get("abstract", "")
+        if not abstract:
+            abstract = row.get("摘要", "")
+
         lines.append(f"@article{{{cite_key},")
         lines.append(f"  title     = {{{_escape_bibtex(title)}}},")
         lines.append(f"  author    = {{{_escape_bibtex(author_str)}}},")
@@ -330,6 +340,8 @@ def _generate_bibtex(rows: list[dict], output_path: str):
         lines.append(f"  year      = {{{year}}},")
         if doi:
             lines.append(f"  doi       = {{{doi}}},")
+        if abstract:
+            lines.append(f"  abstract  = {{{_escape_bibtex(abstract)}}},")
         if note:
             lines.append(f"  note      = {{{_escape_bibtex(note)}}},")
         lines.append("}")
