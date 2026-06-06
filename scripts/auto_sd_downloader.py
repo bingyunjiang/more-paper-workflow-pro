@@ -115,8 +115,8 @@ if __name__ == "__main__":
                         help="Seconds for Strategy A — direct /pdfft (default: 8)")
     parser.add_argument("--timeout-b", type=int, default=20,
                         help="Seconds for Strategy B — article page extraction (default: 20)")
-    parser.add_argument("--no-restart", action="store_true",
-                        help="Skip browser restart; use existing CDP browser session")
+    parser.add_argument("--restart", action="store_true",
+                        help="Force restart the browser (KILLS existing session — requires re-login!)")
     args = parser.parse_args()
 
     if not check_required_deps():
@@ -177,21 +177,29 @@ if __name__ == "__main__":
 
         # ---- Start or confirm browsers ----
         all_ready = True
-        if args.no_restart:
+        if args.restart:
+            # Explicit restart requested — kills existing session (will require re-login!)
             for name, path, port, prof in browsers:
-                if check_cdp(port):
-                    print(f"  ✅ {name} (port {port}) — 使用现有会话", flush=True)
-                else:
-                    print(f"  ❌ {name} (port {port}) — CDP 未运行", flush=True)
-                    all_ready = False
-        else:
-            for name, path, port, prof in browsers:
-                print(f"Starting {name} (port {port})...", flush=True)
+                print(f"⚠️ 强制重启 {name} (port {port}) — 将丢失登录会话！", flush=True)
                 if not restart_browser(port, path, prof):
                     print(f"  ❌ Failed to start {name}", flush=True)
                     all_ready = False
                 else:
                     ensure_sd_access(port)
+        else:
+            # Default: reuse existing CDP session (preserves login cookies)
+            for name, path, port, prof in browsers:
+                if check_cdp(port):
+                    print(f"  ✅ {name} (port {port}) — 复用现有会话", flush=True)
+                    if not ensure_sd_access(port):
+                        all_ready = False
+                else:
+                    print(f"  ⚠️ {name} (port {port}) CDP 未运行，启动中...", flush=True)
+                    if not restart_browser(port, path, prof):
+                        print(f"  ❌ Failed to start {name}", flush=True)
+                        all_ready = False
+                    else:
+                        ensure_sd_access(port)
 
         if not all_ready:
             print("浏览器不可用，退出", flush=True)
