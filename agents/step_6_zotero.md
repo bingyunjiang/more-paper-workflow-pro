@@ -95,7 +95,7 @@
 ### 6a：生成 Zotero 文库架构
 
 ```bash
-python3 scripts/organize_zotero.py 大纲关键词.md --output zotero-架构.md
+python3 scripts/organize_zotero.py 大纲关键词.md --output zotero-架构.md --json zotero-架构.json
 ```
 
 示例结构：
@@ -111,6 +111,57 @@ python3 scripts/organize_zotero.py 大纲关键词.md --output zotero-架构.md
     ├── P0-B1 方法A
     └── P0-B2 方法B
 ```
+
+### 6a-MCP：通过 Zotero MCP 自动创建集合
+
+> 替代手动逐级创建。要求 Zotero MCP 已配置且 Zotero 桌面端运行中（本地模式）或 Web API 可用（云端模式）。
+
+**执行前检查：**
+1. 确认 6.0 已选择模式（本地/云端），Zotero MCP 工具可用
+2. 确认 `zotero-架构.json` 已由 6a 生成
+
+**创建流程（递归，每个子集合的 `parent_collection` 传直接父级的 key）：**
+
+```
+# Step 1 — 幂等性检查
+zotero_search_collections(query="论文文献库")
+  → 如果已存在，询问用户：跳过 / 删除重建 / 保留并补充缺失
+
+# Step 2 — 创建根集合
+zotero_create_collection(name="论文文献库")
+  → root_key (如 "ABC12345")
+
+# Step 3 — 递归创建子集合（按 zotero-架构.json 的树结构）
+# 对每个一级节点：
+zotero_create_collection(name="1-基础", parent_collection=root_key)
+  → l1_key_1
+# 对每个二级节点（parent 用直接父级 key，不是根 key）：
+zotero_create_collection(name="P0-A1 基础理论", parent_collection=l1_key_1)
+  → l2_key
+# ... 继续递归直到叶子节点
+
+# Step 4 — 验证
+zotero_get_collections()
+  → 确认树结构与 zotero-架构.json 一致
+```
+
+**关键规则：**
+- `parent_collection` **始终传直接父级的 8 位 key**，不是根 key。这样 3 层以上的嵌套结构才能正确保留
+- 每创建一个集合立即记录 `name → key` 映射表，供下一级子节点引用
+- 如果 `zotero_create_collection` 返回错误（如重名），先 `zotero_search_collections` 确认是否已存在，已存在则复用其 key 继续
+
+**错误处理：**
+| 情况 | 处理 |
+|------|------|
+| 集合已存在 | `zotero_search_collections` 找到现有 key，复用，跳过创建 |
+| 创建返回空/超时 | 重试 1 次，仍失败则记录到 error_log，继续下一个 |
+| 父集合 key 丢失 | 回溯：`zotero_search_collections(query="父集合名")` 找回 key |
+| 中途中断 | 下次执行时幂等性检查会跳过已创建的集合，从断点继续 |
+
+**完成后向用户报告：**
+- 创建了 X 个集合（Y 个新建，Z 个已存在跳过）
+- 树结构概要（一级集合名列表）
+- 如有失败项，列出并建议手动补建
 
 ### 6b：导入 PDF 到 Zotero
 
