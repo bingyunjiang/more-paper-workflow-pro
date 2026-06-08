@@ -74,6 +74,15 @@ except:
 
 ### Zotero / 平台兼容性
 
+**Zotero 本地模式连接失败（Step 6 常见）：**
+当 `ZOTERO_LOCAL=true` 但 AI agent 无法连接到 Zotero 桌面端时，最常见的原因是 Zotero 桌面端未运行。
+AI agent 应执行以下诊断步骤：
+1. 检查配置：`python3 -c "import json; c=json.load(open('$HOME/.config/zotero-mcp/config.json')); print(c.get('ZOTERO_LOCAL','false'))"`
+2. 如果返回 `true`，检测端口：`curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:23119/api/users/1/items?limit=1`
+3. 如果端口不通 → 向用户提示「请打开 Zotero 桌面端」并等待确认后继续。
+
+如果用户不方便运行本地 Zotero，可通过修改 `~/.config/zotero-mcp/config.json` 将 `ZOTERO_LOCAL` 改为 `false` 切换到云端模式。
+
 **scripts/packages/ 目录的平台兼容性：** 约 16 个 macOS ARM64 专用二进制 wheel。跨平台使用需重新下载。
 
 ### 其他

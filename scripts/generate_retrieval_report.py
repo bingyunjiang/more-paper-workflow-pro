@@ -132,6 +132,8 @@ def _parse_md_table(md_path: str) -> list[dict]:
             col_map["journal"] = idx
         elif "abstract" in col_clean or "摘要" in col_clean:
             col_map["abstract"] = idx
+        elif "url" in col_clean or "文章链接" in col_clean:
+            col_map["article_url"] = idx
 
     # Parse data rows
     for row_line in best_data:
@@ -347,6 +349,9 @@ def _generate_bibtex(rows: list[dict], output_path: str):
             lines.append(f"  doi       = {{{doi}}},")
         if abstract:
             lines.append(f"  abstract  = {{{_escape_bibtex(abstract)}}},")
+        url = row.get("article_url", "")
+        if url:
+            lines.append(f"  url       = {{{_escape_bibtex(url)}}},")
         if note:
             lines.append(f"  note      = {{{_escape_bibtex(note)}}},")
         lines.append("}")
