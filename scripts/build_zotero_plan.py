@@ -589,7 +589,10 @@ def write_review(path: str, plan: dict[str, Any]) -> None:
                 pdf=truncate(Path(rec.get("pdf_path", "")).name if rec.get("pdf_path") else "未找到", 40),
             )
         )
-    Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    p = Path(path)
+    if p.parent and str(p.parent) != ".":
+        p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> int:
