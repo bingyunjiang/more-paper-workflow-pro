@@ -23,7 +23,7 @@
 [**中文**](#chinese) &nbsp;|&nbsp; [**English**](#english)
 
 <a id="chinese"></a>
-# 📚 more paper workflow pro skill `v1.0.7-20260607`
+# 📚 more paper workflow pro skill `v1.0.9-20260609`
 
 ## 📑 目录
 
@@ -454,13 +454,13 @@ python3 scripts/setup_zotero.py --smoke-test
 >
 > 📖 详细指南：[`docs/ZOTERO_MCP_SETUP.md`](docs/ZOTERO_MCP_SETUP.md) | 离线安装：[`scripts/packages/README.md`](scripts/packages/README.md)
 
-#### 6d: 导入条目并关联 PDF 附件
+#### 6d: 导入条目并关联PDF附件
 
 通过 Zotero MCP 导入 `文献库.bib` 条目，按 `文献-Zotero架构对照.json` 移入对应集合，再从 PDF 附件池中把匹配 PDF 关联为条目附件。完成后检查：
 
 - 每个 BibTeX 条目在 Zotero 中有唯一条目或明确失败原因
-- T1/T2 条目进入对应集合
-- T1/T2 条目已关联 PDF 附件，缺失项列入缺附件清单，附件池中未匹配 PDF 列入未关联清单
+- T1/T2/T3 条目进入对应集合
+- T1/T2/T3 条目已关联 PDF 附件，缺失项列入缺附件清单，附件池中未匹配 PDF 列入未关联清单
 - Zotero 集合、条目、PDF 与 `文献-Zotero架构对照.json` 一致
 
 > **为什么谨慎使用 Zotero 云端上传？** Zotero 免费版仅有 300MB 文件存储，批量下载的 PDF 总量可达 1.4GB+，远超免费额度。若 MCP 无法写入附件，可保留元数据入库结果，并在 Zotero 桌面端按对照表手动拖拽 PDF 附件。
@@ -1302,8 +1302,8 @@ python3 scripts/setup_zotero.py --smoke-test
 Import `文献库.bib` into Zotero, move items into the mapped collections, then attach matching files from the PDF attachment pool to their corresponding parent items. Final checks:
 
 - Every BibTeX entry has one Zotero item or an explicit failure reason.
-- T1/T2 items are assigned to the correct collections.
-- T1/T2 items have PDF attachments, and missing PDFs are listed separately.
+- T1/T2/T3 items are assigned to the correct collections.
+- T1/T2/T3 items have PDF attachments, and missing PDFs are listed separately.
 - Zotero collections, items, PDFs, and `文献-Zotero架构对照.json` agree.
 
 > **Why be careful with Zotero cloud upload?** Zotero free tier only provides 300MB file storage, while batch-downloaded PDFs can total 1.4GB+. If MCP cannot write attachments, keep metadata imported and attach PDFs manually in Zotero desktop following the mapping file.

@@ -203,7 +203,7 @@ python3 scripts/organize_zotero.py 大纲关键词.md --output zotero-架构.md 
 
 **质量要求：**
 - 每个 BibTeX 条目必须出现在对照表中。
-- 每个 T1/T2 条目必须有推荐集合路径。
+- 每个 T1/T2/T3 条目必须有推荐集合路径。
 - 中文条目必须有 `source_id` 和 `article_url`；缺作者/年份/来源名称时必须列入「中文元数据待补全」清单。
 - 缺真实 DOI、缺 PDF、重复条目、无法判定集合的文献必须单独列出。
 - `文献-Zotero架构对照.json` 中所有用于机器执行的字段禁止截断；Markdown 中的截断不得反向污染 JSON。
@@ -302,7 +302,7 @@ zotero_get_collections()
 **一致性检查：**
 - `文献库.bib` 中每个条目：Zotero 中都有唯一条目或明确标记为重复/失败。
 - CNKI/万方中文条目：Zotero 中的 title、author、year、publicationTitle/来源、URL、language、Extra/source_id 必须完整。
-- T1/T2 条目：必须有集合归属；缺 PDF 时必须列入「缺附件清单」。
+- T1/T2/T3 条目：必须有集合归属；缺 PDF 时必须列入「缺附件清单」。
 - PDF 文件：不得孤立存在；每个成功匹配的 PDF 必须能追溯到 Zotero 条目。
 - 附件池中未匹配 PDF 必须列入「未关联 PDF 清单」，不得静默忽略。
 - Zotero 条目：不得只导入元数据却未移动到推荐集合，除非 JSON 记录标记为「待人工确认」。
