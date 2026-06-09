@@ -19,7 +19,7 @@
 - [ ] `pdf-附件池索引.json` — Step 6 产出（多来源 PDF 附件池、匹配状态、完整路径；直接 Zotero 写作时可缺省）
 - [ ] `.skill-state/term_aliases.md` — 🆕 术语标准化映射（确保写作用词与检索一致）
 - [ ] `references/literature-review-matrix-schema.md` — 综述矩阵 schema
-- [ ] `references/journal-style-learning-guide.md` — 期刊风格学习方法论
+- [ ] `references/journal-style-learning-guide.md` — 目标体裁/文档风格学习方法论（期刊、学位论文、会议论文、既有草稿均可适配）
 - [ ] `references/gbt7714-2015-citation-format.md` — 引用格式规范
 - [ ] `.skill-state/error_log.md` — 已知错误及修复规则
 
@@ -27,13 +27,15 @@
 
 ## 2. 适用任务 (Applicable Tasks)
 
-- 撰写完整学术论文（5 种 paper_type × 3 种语言）
+- 撰写完整学术论文（paper_type × language × target_type）
 - 写文献综述（review 类型专属 8 节骨架 + 7 条纪律）
 - 写中英文双边摘要
-- 实时引文支撑（7e）
-- 同行评审仿真 + Rebuttal 预演（7f）
-- 科研图表生成（7g）
-- 写后引用审计（7h）
+- 撰写或续写学位论文、课程论文、会议论文、期刊论文的指定章节
+- 基于已有草稿补写、改写、扩写其中一部分章节
+- 实时引文支撑（7.7）
+- 同行评审仿真 + Rebuttal 预演（7.9）
+- 科研图表生成（7.10）
+- 写后引用审计（7.11）
 
 ---
 
@@ -57,9 +59,10 @@
 | 文献-Zotero架构对照 | Step 6 / Zotero MCP 动态生成 | .json + .md | 推荐 |
 | PDF 附件池索引 | Step 6 / Zotero MCP 动态生成 | .json | 可选 |
 | Zotero 条目/PDF 附件 | Zotero 文库 | Zotero MCP | ✅ |
-| 综述矩阵 | Step 7.0 | .csv/.md | 写作前生成 |
-| 期刊风格画像 | Step 7.1 | .md | 🆕 |
-| 章节蓝图 | Step 7.1 | .md | 🆕 |
+| 已有草稿/指定章节 | 用户提供 | .md/.docx/章节文本 | 可选 |
+| 综述矩阵 | Step 7.1 | .csv/.md | 写作前生成 |
+| 目标体裁/文档风格画像 | Step 7.2 | .md | 🆕 |
+| 章节蓝图 | Step 7.2 | .md | 🆕 |
 
 > Step 7 不再直接把 `paper-temp/*.pdf` 当作唯一知识库。PDF 可以来自 Step 5、原有文件、后续补下载、手动整理目录，或已经存在于 Zotero 条目附件中。若 `pdf-附件池索引.json` 不存在，但 Zotero 条目已带 PDF 附件，则以 Zotero MCP 的 `zotero_get_item_children` / `zotero_get_attachment_path` / `zotero_get_item_fulltext` 为准，必要时再生成临时 `pdf-附件池索引.json` 供审计复用。
 
@@ -70,12 +73,13 @@
 | 输出 | 格式 | 说明 |
 |------|------|------|
 | 综述矩阵 | CSV/Markdown | 13 列证据矩阵 |
-| research_dossier/ | 目录 | 期刊风格画像 + 章节蓝图 + 写作逻辑矩阵 |
+| research_dossier/ | 目录 | 样本状态 + 目标体裁/文档风格画像 + 章节蓝图 + 写作逻辑矩阵 |
 | 论文初稿 | .md / .docx | 含完整结构和参考文献 |
+| 指定章节草稿 | .md / .docx | chapter-only / continue-existing 模式产出 |
 | 中→英术语对照表 | .md | zh-to-en 模式额外产出 |
-| 评审报告 + rebuttal-预演 | .md → .pdf | 7f 质量门产出 |
-| 图表 | SVG/PDF/TIFF | 7g 产出，保存到 figures/ |
-| 引用审计报告 | .md → .pdf | 7h 产出 |
+| 评审报告 + rebuttal-预演 | .md → .pdf | 7.9 质量门产出 |
+| 图表 | SVG/PDF/TIFF | 7.10 产出，保存到 figures/ |
+| 引用审计报告 | .md → .pdf | 7.11 产出 |
 
 ---
 
@@ -101,15 +105,19 @@
 
 | 子步骤 | 核心功能 | 主要输入 | 主要输出 |
 |--------|----------|----------|----------|
-| 7.0 | 生成文献综述矩阵 | Zotero 条目/笔记/标注、PDF 附件、对照 JSON | `综述矩阵.csv/.md` |
-| 7.1 | 学习目标期刊风格并生成章节蓝图 | 目标期刊样本文献、Step 2 大纲、综述矩阵 | `research_dossier/` |
-| 7a-7d | 论文类型/语言/章节写作规则 | 研究主题、大纲、矩阵、风格画像 | `论文初稿.md/.docx` |
-| 7e | 实时引文支撑 | 已入库 Zotero 文献为主，新文献走回流闭环 | 段落引用匹配报告 |
-| 7f | 同行评审仿真 | 初稿、矩阵、风格画像 | `评审报告.md` + `rebuttal-预演.md` |
-| 7g | 科研图表生成 | 初稿、数据文件、图表规范 | `figures/` + 图表清单 |
-| 7h | 写后引用审计 | 初稿、Zotero 条目、PDF/笔记/标注证据 | `引用审计报告.md` |
+| 7.1 | 生成文献证据矩阵 | Zotero 条目/笔记/标注、PDF 附件、对照 JSON | `综述矩阵.csv/.md` |
+| 7.2 | 学习目标体裁/文档风格并生成章节蓝图 | 目标样本文献/学位论文规范/已有草稿、Step 2 大纲、综述矩阵 | `research_dossier/` |
+| 7.3 | 论文类型、目标体裁与语言识别 | 研究主题、大纲、投稿/毕业/课程目标 | paper_type + target_type + language |
+| 7.4 | 写作模式选择 | 写作范围、已有草稿、用户任务 | full / chapter-only / continue-existing 等 |
+| 7.5 | 语言差异化规则 | language、术语表、目标体裁 | 术语与语言规范 |
+| 7.6 | 章节级写作规则 | 大纲、矩阵、风格画像、已有草稿 | `论文初稿.md/.docx` 或指定章节草稿 |
+| 7.7 | 实时引文支撑 | 已入库 Zotero 文献为主，新文献走回流闭环 | 段落引用匹配报告 |
+| 7.8 | 防幻觉机制 | 引用、证据等级、JSON 追溯 | 引用安全规则 |
+| 7.9 | 同行评审仿真 | 初稿、矩阵、风格画像 | `评审报告.md` + `rebuttal-预演.md` |
+| 7.10 | 科研图表生成 | 初稿、数据文件、图表规范 | `figures/` + 图表清单 |
+| 7.11 | 写后引用审计 | 初稿、Zotero 条目、PDF/笔记/标注证据 | `引用审计报告.md` |
 
-### 7.0: 生成文献综述矩阵（写作前证据组织）
+### 7.1: 生成文献证据矩阵（写作前证据组织）
 
 **13 列矩阵：** 作者年份 | 标题 | 研究问题 | 理论/概念 | 数据/样本 | 方法 | 核心发现 | 贡献 | 局限 | 与我的主题关系 | 可引用摘录 | 我的笔记 | DOI/URL
 
@@ -142,16 +150,34 @@
 
 **缺失值约定：** `未提及`（论文确实未讨论）/ `待补充`（计划后续补全）/ `推断：{内容}`（基于已有信息合理推断）
 
-### 7.1: 目标期刊风格学习与写作蓝图
+### 7.2: 目标体裁/文档风格学习与写作蓝图
 
-**核心理念：** paper_type 轴告诉你"写什么类型的论文"，目标期刊风格学习告诉你"怎么写才能让这个期刊的读者和审稿人觉得'这是自己人写的'"。
+**核心理念：** paper_type 轴告诉你"写什么类型的论文"，目标体裁/文档风格学习告诉你"这份文本应该按什么规范、结构深度和语言节奏来写"。目标可以是期刊，也可以是学位论文、会议论文、课程论文、开题报告，或用户已有草稿的既有风格。
+
+**目标类型：**
+
+| target_type | 适用场景 | 风格/结构依据 |
+|-------------|----------|---------------|
+| `journal` | 目标期刊论文 | 目标期刊近期样文、author guidelines、投稿模板 |
+| `thesis` | 硕士/博士学位论文 | 学校论文规范、学院模板、已有章节、大纲结构 |
+| `conference` | 会议论文 | 会议模板、页数限制、领域样文 |
+| `course-paper` | 课程论文/阶段报告 | 课程要求、教师给定格式、已有材料 |
+| `existing-draft` | 已有部分内容，只续写/改写一部分 | 用户已有草稿的术语、语气、标题层级、引用格式 |
+
+**写作范围：**
+- `full-document`：从大纲开始撰写完整论文。
+- `chapter-only`：只撰写一个或多个指定章节，如“绪论”“文献综述”“方法”“讨论”。
+- `continue-existing`：在已有草稿基础上续写、补写或局部替换。
+- `abstract-only`：只写中文摘要、英文摘要或双边摘要。
+- `revision-only`：不新增主体内容，只根据证据和风格规则修改已有章节。
 
 **工作流：**
 ```
-Step 7.1-1: 风格剖析      → style_profile.md        (四维度量化：格式化/结构/引用/语言)
-Step 7.1-2: 章节蓝图      → section_blueprints.md    (逐节写作计划：论证链+证据映射+图表位置)
-Step 7.1-3: 写作逻辑矩阵  → writing_rationale_matrix.md (逐单元理由)
-Step 7.1-4: LaTeX 校验    → latex_check.md（可选）
+Step 7.2-0: 样本盘点      → style_sample_status.md/json (样本来源、数量、缺口、回退策略)
+Step 7.2-1: 风格剖析      → style_profile.md             (四维度量化：格式化/结构/引用/语言)
+Step 7.2-2: 章节蓝图      → section_blueprints.md         (逐节写作计划：论证链+证据映射+图表位置)
+Step 7.2-3: 写作逻辑矩阵  → writing_rationale_matrix.md    (逐单元理由)
+Step 7.2-4: LaTeX 校验    → latex_check.md（可选）
 ```
 
 **两种分析深度：**
@@ -159,23 +185,86 @@ Step 7.1-4: LaTeX 校验    → latex_check.md（可选）
 | 模式 | 范文数 | 时长 | 产出 | 适用场景 |
 |------|:---:|------|------|------|
 | **Flash** | 3 篇 | ~3 min | `style_profile.md` | 初次投稿该期刊 |
-| **Pro** | 6 篇 | ~8 min | `style_profile.md` + `research_dossier.md` | 核心目标期刊 |
+| **Pro** | 6 篇 | ~8 min | `style_profile.md` + `research_dossier.md` | 核心目标期刊/学位论文/既有草稿 |
 
 ```bash
-python3 scripts/learn_journal_style.py --target-journal "Applied Thermal Engineering" --sample-source zotero --collection "目标期刊样本" --mode flash
+python3 scripts/learn_journal_style.py --target-type journal --target-name "Applied Thermal Engineering" --sample-source zotero --collection "目标期刊样本" --mode flash
+python3 scripts/learn_journal_style.py --target-type thesis --target-name "硕士学位论文" --sample-source draft --draft 论文已有草稿.md --mode flash
 python3 scripts/generate_section_blueprints.py research_dossier/style_profile.md 大纲关键词.md --evidence 综述矩阵.csv --output research_dossier/
 python3 scripts/generate_writing_rationale.py research_dossier/section_blueprints.md --style-profile research_dossier/style_profile.md --output research_dossier/writing_rationale_matrix.md
 ```
 
-> 目标期刊样本文献是“风格学习语料”，不等同于 Step 4 的主题文献库。样本文献可来自目标期刊近期代表作、用户指定 PDF 目录或 Zotero 中单独的目标期刊样本集合；不得默认使用 `paper-temp/` 中的全部研究文献作为期刊风格样本。
+> 目标样本是“风格学习语料”，不等同于 Step 4 的主题文献库。样本可来自目标期刊近期代表作、学位论文模板、学校格式规范、用户指定 PDF 目录、Zotero 样本集合或已有草稿；不得默认使用 `paper-temp/` 中的全部研究文献作为目标风格样本。
 
-**样本文献来源规则：**
-1. 优先使用用户指定的目标期刊样本 PDF 或 Zotero 集合。
-2. 未指定时，从 Step 4/6 中筛选 `publication_title` 与目标期刊一致的近期 T1/T2 文献。
-3. 样本不足时，先报告缺口，再建议回到 Step 4 检索目标期刊样本；不要把非目标期刊论文混入风格画像。
-4. 风格学习只学习结构、语气、引用密度、图表呈现和章节节奏；不得复制句子或段落。
+**样本集合命名约定：**
 
-### 7a: 论文类型与语言双轴识别
+| target_type | 推荐 Zotero 集合名 | 说明 |
+|-------------|--------------------|------|
+| `journal` | `目标风格样本 / 期刊-{target_name}` | 目标期刊近期样文、投稿模板、author guidelines |
+| `thesis` | `目标风格样本 / 学位论文-{学校或层级}` | 学校模板、学院规范、优秀学位论文、已有章节 |
+| `conference` | `目标风格样本 / 会议-{target_name}` | 会议模板、页数限制、领域样文 |
+| `course-paper` | `目标风格样本 / 课程论文-{课程名}` | 课程要求、评分 rubrics、已有材料 |
+| `existing-draft` | `目标风格样本 / 已有草稿-{项目名}` | 用户草稿、已定稿章节、导师修改稿 |
+
+> 集合名只是推荐约定，不是硬性要求；如果用户直接提供目录、文件或草稿，也可以作为样本源。但 7.2 必须把实际使用的样本写入 `style_sample_status.md/json`。
+
+**样本来源规则：**
+1. 优先使用用户指定的样本 PDF、Zotero 集合、学校模板、投稿模板或已有草稿。
+2. `journal` 未指定样本时，可从 Step 4/6 中筛选 `publication_title` 与目标期刊一致的近期 T1/T2 文献。
+3. `thesis` 未指定样本时，使用学校/学院格式规范和已有章节；没有规范时先生成通用学位论文蓝图并标记待确认。
+4. 样本不足时，先报告缺口，再建议补充目标样本；不要把非目标体裁文本混入风格画像。
+5. 风格学习只学习结构、语气、引用密度、图表呈现和章节节奏；不得复制句子或段落。
+
+**样本数量与回退策略：**
+
+| 状态 | 样本条件 | 处理方式 | confidence |
+|------|----------|----------|------------|
+| 充足 | `journal/conference` ≥ 3 篇；`thesis` ≥ 1 个模板/规范 + 1 篇样文或已有章节；`existing-draft` ≥ 1500 字 | 正常生成风格画像和章节蓝图 | high |
+| 偏少 | `journal/conference` 1-2 篇；`thesis` 只有模板/规范或只有已有章节；`existing-draft` 500-1500 字 | 生成低样本风格画像，标记缺口，不阻塞写作 | medium |
+| 缺失 | 无可用样本，仅有 target_type / target_name | 使用通用体裁规则 + Step 2 大纲，必须提示用户补样本 | low |
+
+**`style_sample_status.md` 推荐格式：**
+
+```md
+# 目标风格样本状态
+
+target_type: thesis
+target_name: 硕士学位论文
+sample_source: existing_draft + university_template
+sample_count: 2
+confidence: medium
+
+## 已使用样本
+1. 论文已有草稿.md
+2. 学校硕士论文模板.docx
+
+## 缺口
+- 缺少优秀学位论文样本
+- 缺少学院具体格式细则
+
+## 回退策略
+使用学校模板 + 已有草稿风格 + 通用硕士论文结构规则。
+```
+
+**`style_sample_status.json` 最低字段：**
+
+```json
+{
+  "target_type": "thesis",
+  "target_name": "硕士学位论文",
+  "sample_source": ["existing_draft", "university_template"],
+  "sample_count": 2,
+  "confidence": "medium",
+  "samples": [
+    {"title": "论文已有草稿.md", "source_type": "draft", "path_or_zotero_key": "论文已有草稿.md"},
+    {"title": "学校硕士论文模板.docx", "source_type": "template", "path_or_zotero_key": "学校硕士论文模板.docx"}
+  ],
+  "gaps": ["缺少优秀学位论文样本", "缺少学院具体格式细则"],
+  "fallback_strategy": "使用学校模板 + 已有草稿风格 + 通用硕士论文结构规则"
+}
+```
+
+### 7.3: 论文类型、目标体裁与语言识别
 
 **轴一：论文类型（paper_type）**
 
@@ -193,9 +282,19 @@ python3 scripts/generate_writing_rationale.py research_dossier/section_blueprint
 |----------|------|---------|
 | **en** | 直接用英文撰写 | IEEE / APA / Nature |
 | **zh** | 用中文撰写 | GB/T 7714 |
-| **zh-to-en** | 中文草稿→英文成稿 | 按目标期刊 |
+| **zh-to-en** | 中文草稿→英文成稿 | 按目标体裁/投稿目标 |
 
-### 7b: 写作模式选择
+**轴三：目标体裁（target_type）**
+
+| target_type | 写作重点 |
+|-------------|----------|
+| **journal** | 问题集中、贡献明确、篇幅紧凑、结果导向 |
+| **thesis** | 结构完整、背景充分、方法细节完整、论证链清楚 |
+| **conference** | 篇幅受限、贡献和实验结果前置 |
+| **course-paper** | 符合课程要求，重视概念解释和规范表达 |
+| **existing-draft** | 保持已有章节风格、术语、编号、引用格式一致 |
+
+### 7.4: 写作模式选择
 
 | 模式 | 触发场景 |
 |------|----------|
@@ -204,8 +303,16 @@ python3 scripts/generate_writing_rationale.py research_dossier/section_blueprint
 | `plan` | 需要多轮引导交互来厘清论点 |
 | `abstract-only` | 仅写中英文摘要 |
 | `argument-first` | 先写一句话核心论点，确保方向正确再展开 |
+| `chapter-only` | 只写一个或多个指定章节 |
+| `continue-existing` | 已有部分内容，只补写、续写或局部改写 |
 
-### 7c: 语言差异化规则
+**已有草稿处理规则：**
+- 先识别已有草稿的标题层级、术语、引用格式、语气和章节编号。
+- 新写内容必须与已有内容保持结构和语言一致，除非用户明确要求重构。
+- 只写部分章节时，不擅自改动其他章节；只在必要处提出“需前后文同步”的提示。
+- 如果已有草稿中的引用缺证据，标记为 `needs_evidence_audit`，不要默认删除。
+
+### 7.5: 语言差异化规则
 
 **zh-to-en 特殊规则（中国研究者最常用场景）：**
 1. 术语锁定：写作开始前先列出"中→英关键术语对照表"
@@ -213,7 +320,7 @@ python3 scripts/generate_writing_rationale.py research_dossier/section_blueprint
 3. 识别中文写作特有的"英文不该有"的模式
 4. 中文数字和单位的英文转换
 
-### 7d: 章节级写作规则
+### 7.6: 章节级写作规则
 
 **摘要：** en: 150-250 words / zh: 300-500 字 | 结构：问题→方法→关键结果→意义
 
@@ -227,7 +334,7 @@ python3 scripts/generate_writing_rationale.py research_dossier/section_blueprint
 
 **结论：** 不是摘要的复读 | 诚实说局限（2-3 条） | 具体未来方向
 
-#### 7d.1 段落与句子级自查
+#### 7.6.1 段落与句子级自查
 
 **① 每段一个工作（One paragraph, one job）：** 8 种可选类型：context / gap / approach / result / comparison / mechanism / implication / limitation
 
@@ -239,14 +346,14 @@ python3 scripts/generate_writing_rationale.py research_dossier/section_blueprint
 
 **⑤ 段落流检查：** 一段一个信息，首句是主题句，后续句与上句有显式关系
 
-#### 🆕 术语对齐检查
+#### 7.6.2 术语对齐检查
 
 - 每章写作前，确认本章核心术语与 `.skill-state/term_aliases.md` 中 Recommended page 匹配
 - 中文论文：全篇统一使用 Main Term 的中文形式
 - 英文论文：全篇统一使用 Main Term 的英文形式
 - 同一概念在全文中的术语形式不超过 1 个（禁止同义词轮换）
 
-### 7e: 实时引文支撑
+### 7.7: 实时引文支撑
 
 **分段引用工作流（Zotero 优先）：**
 ```
@@ -264,16 +371,16 @@ python3 scripts/generate_writing_rationale.py research_dossier/section_blueprint
 
 **摘要级引用规则：**
 - 只有完整摘要、无 PDF 的条目，可以用于背景性、领域概况性、研究主题归类性引用。
-- 引用标记必须记录为 `evidence_level=abstract_only`，7h 审计时单独列出。
+- 引用标记必须记录为 `evidence_level=abstract_only`，7.11 审计时单独列出。
 - 不得用摘要级证据支撑具体实验数据、参数、机制解释、效果提升百分比或“证明/证实”类强动词。
 - 写作主证据不足时，应回到 Step 5/6 补 PDF 或补全文，而不是提高摘要级证据的强度。
 
 **新增引用回流规则：**
 - 如果现有 Zotero 文库无法支撑某个 claim，不允许现场编造或只凭网页摘要引用。
-- 新引用必须走 Step 4/6 小闭环：检索/评分 → 加入 `文献库.bib` 或增量 bib → 补充中文元数据 → PDF 下载/附件池匹配 → Zotero 入库 → 更新 `文献-Zotero架构对照.json` → 再进入 7e。
+- 新引用必须走 Step 4/6 小闭环：检索/评分 → 加入 `文献库.bib` 或增量 bib → 补充中文元数据 → PDF 下载/附件池匹配 → Zotero 入库 → 更新 `文献-Zotero架构对照.json` → 再进入 7.7。
 - 紧急写作时可在段落中保留 `[待补引用: claim]`，但不得进入最终稿。
 
-### 防幻觉机制（核心）
+### 7.8: 防幻觉机制（核心）
 
 | 机制 | 说明 |
 |------|------|
@@ -286,7 +393,7 @@ python3 scripts/generate_writing_rationale.py research_dossier/section_blueprint
 | **中文元数据完整** | 中文引用必须核对 title/authors/year/publication/source_id/article_url，不依赖 DOI |
 | **摘要级降权** | 只有摘要无全文的条目必须标记为 abstract_only，不能支撑强 claim |
 
-### 7f: 同行评审仿真（质量门）
+### 7.9: 同行评审仿真（质量门）
 
 五维度评分（0-10 分 + 权重）：原创性 20% / 方法严谨性 25% / 证据充分性 25% / 论证连贯性 15% / 写作质量 15%
 
@@ -296,7 +403,7 @@ Rebuttal Letter 预演：不等真实投稿，在质量门阶段就预演 rebutt
 
 **限 2 轮修改。** 评分 < 5 的维度 → 回到对应步骤补足。
 
-### 7g: 科研图表生成 🆕
+### 7.10: 科研图表生成 🆕
 
 支持 10 种图表类型（grouped_bar / stacked_bar / trend_line / heatmap_seq / heatmap_div / bubble_scatter / radar_polar / gridspec / fill_between）。
 
@@ -306,7 +413,7 @@ python3 scripts/generate_figures.py 论文初稿.md --data data/ --output figure
 
 设计规则：三级信息层次 / 直标优于图例 / 无反冗余面板 / 低饱和度配色 / 绿色红色仅用于方向性。
 
-### 7h: 写后引用审计 🆕
+### 7.11: 写后引用审计 🆕
 
 > 核心目的：抓"LLM 把标题相关的论文当成支撑某个具体声明的论文"这种张冠李戴。
 
@@ -335,14 +442,14 @@ python3 scripts/citation_audit.py 论文初稿.md --zotero-collection "论文文
 ## 7. 质量门槛 (Quality Gates)
 
 - [ ] paper_type 和 language 已识别
-- [ ] 7.0 综述矩阵：13 列完整，证据优先级规则已遵循
-- [ ] 7.1 期刊风格：Flash 或 Pro 模式已完成，style_profile.md 已生成
+- [ ] 7.1 文献证据矩阵：13 列完整，证据优先级规则已遵循
+- [ ] 7.2 目标体裁/文档风格：`style_sample_status.md/json` 已生成，Flash 或 Pro 模式已完成，style_profile.md 已生成
 - [ ] 防幻觉机制：每处引用均来自 Zotero 条目和实际 PDF/笔记/标注证据
 - [ ] T1/T2/T3 覆盖：矩阵覆盖 Step 6 中所有 T1/T2/T3，写作引用优先使用 T1/T2，T3 用途已标明
-- [ ] 7d.1 段落自查：每段一个工作 / 从证据向外写 / 动词校准 / 无虚假新颖性 / 段落流
+- [ ] 7.6.1 段落自查：每段一个工作 / 从证据向外写 / 动词校准 / 无虚假新颖性 / 段落流
 - [ ] 🆕 术语对齐：核心术语与 `.skill-state/term_aliases.md` 一致
-- [ ] 7f 同行评审：五维评分全部 ≥ 5 分（<5 分已回退修复）
-- [ ] 7h 引用审计：❌ 不支撑引用已移除或替换
+- [ ] 7.9 同行评审：五维评分全部 ≥ 5 分（<5 分已回退修复）
+- [ ] 7.11 引用审计：❌ 不支撑引用已移除或替换
 
 ---
 
@@ -352,7 +459,7 @@ python3 scripts/citation_audit.py 论文初稿.md --zotero-collection "论文文
 - [ ] `论文初稿.md` 已生成
 - [ ] `论文初稿.docx` 已自动生成
 - [ ] `综述矩阵.csv` + `综述矩阵.md` 已生成
-- [ ] 期刊风格产出：`research_dossier/` 目录完整
+- [ ] 目标体裁/文档风格产出：`research_dossier/` 目录完整，含 `style_sample_status.md/json`
 - [ ] `评审报告.md` + `rebuttal-预演.md` 已生成
 - [ ] `引用审计报告.md` 已生成
 - [ ] figures/ 目录图表完整
@@ -365,9 +472,9 @@ python3 scripts/citation_audit.py 论文初稿.md --zotero-collection "论文文
 - [ ] 本轮是否出现新的 AI 操作错误？
   - 引用编造 → 追加到 `.skill-state/error_log.md`
   - 综述矩阵证据填充错误 → 追加到 `.skill-state/error_log.md`
-  - 期刊风格分析偏差 → 追加到 `.skill-state/error_log.md`
+  - 目标体裁/文档风格分析偏差 → 追加到 `.skill-state/error_log.md`
   - 术语混用 → 追加到 `.skill-state/error_log.md`
-  - 7h 审计发现系统性误引 → 追加到 `.skill-state/error_log.md`
+  - 7.11 审计发现系统性误引 → 追加到 `.skill-state/error_log.md`
 
 ### 决策日志更新 🆕
 - [ ] 是否调整了章节结构？→ 记录到 `.skill-state/decision_log.md`
@@ -383,8 +490,8 @@ python3 scripts/citation_audit.py 论文初稿.md --zotero-collection "论文文
 
 常见问题参见 `agents/known_pitfalls.md`。本 Step 特有的问题：
 
-- **引用不足**：运行 7e 扩展搜索补充引用；检查引用密度指南
+- **引用不足**：运行 7.7 扩展搜索补充引用；检查引用密度指南
 - **现有 Zotero 文库不能支撑 claim**：回到 Step 4/6 小闭环补文献、补 PDF、补入库，再继续写作
-- **AI 痕迹明显**：7d.1 自查步骤逐项检查；Step 8 Level 3 去 AI 化
-- **引用审计大量不支撑**：7h 逐条处理，❌ 级别优先替换或移除
+- **AI 痕迹明显**：7.6.1 自查步骤逐项检查；Step 8 Level 3 去 AI 化
+- **引用审计大量不支撑**：7.11 逐条处理，❌ 级别优先替换或移除
 - **术语不一致**：回查 `.skill-state/term_aliases.md`，全篇统一为 Main Term

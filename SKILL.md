@@ -133,7 +133,7 @@ triggers:
   - "collection coverage heatmap"
   - "outline mapping report"
   - "Zotero coverage PDF"
-  # Step 7.0: 综述矩阵
+  # Step 7.1: 文献证据矩阵
   - "综述矩阵"
   - "文献综述矩阵"
   - "生成综述矩阵"
@@ -141,16 +141,29 @@ triggers:
   - "文献矩阵"
   - "文献审阅矩阵"
   - "论文审阅表"
-  # Step 7.1: 目标期刊风格学习+蓝图 🆕
+  # Step 7.2: 目标体裁/文档风格学习+蓝图 🆕
   - "学习目标期刊风格"
   - "期刊风格分析"
   - "目标期刊蓝图"
   - "论文风格学习"
   - "期刊格式分析"
+  - "学位论文写作风格"
+  - "目标体裁风格"
+  - "文档风格分析"
+  - "已有草稿续写"
+  - "只写部分章节"
+  - "撰写指定章节"
+  - "续写论文"
   - "Journal style learning"
   - "Target journal blueprint"
   - "Learn journal style"
   - "Analyze target journal"
+  - "Thesis style"
+  - "Target genre"
+  - "Document style"
+  - "Continue existing draft"
+  - "Write selected chapter"
+  - "Chapter-only writing"
   - "Section blueprints"
   - "Writing rationale matrix"
   - "风格剖析"
@@ -171,7 +184,7 @@ triggers:
   - "基于文献写论文"
   - "基于 Zotero 文库中的文献，开始撰写论文"
   - "Based on the literature in Zotero, let's start writing the paper"
-  # Step 7g: 科研图表生成 🆕
+  # Step 7.10: 科研图表生成 🆕
   - "生成图表"
   - "科研绘图"
   - "论文图表"
@@ -183,7 +196,7 @@ triggers:
   - "Generate figures"
   - "Create publication figures"
   - "Make charts for paper"
-  # Step 7h: 引用审计 🆕
+  # Step 7.11: 引用审计 🆕
   - "引用审计"
   - "参考文献审计"
   - "检查引用是否准确"
@@ -296,17 +309,18 @@ Step 6: Zotero 文库管理              → zotero-架构.md + 文献-Zotero架
   ├─ 6b 生成对照    结合 Step 4 文献库.bib/中文元数据 与 zotero-架构生成文献-Zotero架构对照.md/json
   ├─ 6c 创建集合    通过 Zotero MCP 创建集合并检查架构一致性
   └─ 6d 导入附件    英文按 DOI/BibTeX，中文按 source_id+CSL JSON 入库，并从 PDF 附件池关联文件
-Step 7: 论文写作（paper_type×language双轴）  → 论文初稿.md / .docx
-  ├─ 7.0 综述矩阵      13 列证据矩阵，按证据优先级填充 🆕
-  ├─ 7.1 风格学习+蓝图 目标期刊风格画像+章节蓝图+写作逻辑矩阵 🆕 v1.1.0
-  ├─ 7a 类型+语言识别  research/en/zh/zh-to-en
-  ├─ 7b 写作模式       full/outline-only/plan/abstract-only/argument-first
-  ├─ 7c 语言差异化     zh/en/zh-to-en 写作规范+章节命名
-  ├─ 7d 章节写作规则   摘要/引言/相关工作/方法/实验/结论
-  └─ 7e 实时引文支撑   Zotero优先匹配→证据读取→评估→引用确认；新文献回流 Step 4/6
-Step 7f: 同行评审仿真（质量门）      → 评审报告.md + rebuttal-预演.md → 评审报告.pdf + rebuttal-预演.pdf
-Step 7g: 科研图表生成 🆕 v1.1.0       → figures/ + 图表清单.md
-Step 7h: 写后引用审计 🆕 v1.1.0       → 引用审计报告.md
+Step 7: 论文写作（paper_type×language×target_type） → 论文初稿.md / 指定章节.md / .docx
+  ├─ 7.1 文献证据矩阵   13 列证据矩阵，按证据优先级填充 🆕
+  ├─ 7.2 风格学习+蓝图 目标体裁/文档风格画像+章节蓝图+写作逻辑矩阵 🆕 v1.1.0
+  ├─ 7.3 类型+语言+体裁识别 research/en/zh/zh-to-en + journal/thesis/conference/existing-draft
+  ├─ 7.4 写作模式       full/outline-only/plan/abstract-only/argument-first/chapter-only/continue-existing
+  ├─ 7.5 语言差异化     zh/en/zh-to-en 写作规范+章节命名
+  ├─ 7.6 章节写作规则   摘要/引言/相关工作/方法/实验/结论
+  ├─ 7.7 实时引文支撑   Zotero优先匹配→证据读取→评估→引用确认；新文献回流 Step 4/6
+  ├─ 7.8 防幻觉机制     evidence_level + JSON追溯 + 中文元数据完整
+  ├─ 7.9 同行评审仿真   评审报告.md + rebuttal-预演.md → PDF
+  ├─ 7.10 科研图表生成  figures/ + 图表清单.md
+  └─ 7.11 写后引用审计  引用审计报告.md
 Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md → 论文润色稿.docx
 ```
 
@@ -316,6 +330,7 @@ Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md → 论
 
 > 本文件是工作流的入口路由。每个 Step 的详细执行规则在 `agents/` 目录下。
 > 架构借鉴自 ResearchWiki 的 Agent 模块化模式。
+> `README.md` 仅作为 GitHub 展示与快速开始说明；运行时规则以本文件和 `agents/step_*.md` 为准。
 
 ### 路由表
 
@@ -330,8 +345,8 @@ Step 8: 论文润色（含句长波动检测）   → 论文润色稿.md → 论
 | "下载论文" / Step 5 相关触发词 | `agents/step_5_download.md` | 统一下载路由（Sci-Hub→SD→IEEE→Generic） |
 | "Zotero 文库整理" / Step 6 相关触发词 | `agents/step_6_zotero.md` | 架构生成 + BibTeX/中文元数据-集合对照 + Zotero 集合创建 + PDF 附件一致性 |
 | "文献-Zotero架构对照" / "PDF 导入 Zotero" | `agents/step_6_zotero.md` | 子步骤 6b/6d：`.json` 为完整执行源，`.md` 为审阅版；英文 DOI/BibTeX，中文 source_id/CSL JSON，多来源 PDF 附件池关联 |
-| "综述矩阵" / "期刊风格学习" | `agents/step_7_writing.md` | Step 7.0/7.1：写作前证据组织 + 目标期刊风格蓝图 |
-| "写论文" / Step 7 相关触发词 | `agents/step_7_writing.md` | 综述矩阵 + 期刊风格 + 5 种写作模式 + 引用审计 + 图表生成 |
+| "综述矩阵" / "期刊风格学习" / "学位论文风格" | `agents/step_7_writing.md` | Step 7.1/7.2：写作前证据组织 + 目标体裁/文档风格蓝图 |
+| "写论文" / "只写部分章节" / "续写已有草稿" / Step 7 相关触发词 | `agents/step_7_writing.md` | 文献证据矩阵 + 目标体裁/文档风格 + 多种写作模式 + 引用审计 + 图表生成 |
 | "论文润色" / Step 8 相关触发词 | `agents/step_8_polishing.md` | 四合一精修引擎 + 术语标准化 |
 | 技术问题 / 报错排查 | `agents/known_pitfalls.md` | Python/CDP/Zotero 已知陷阱 |
 
@@ -390,9 +405,9 @@ fi
 | **PyMuPDF (fitz)** | 提取 PDF 全文文本 | Step 8 | ⬜ 可选 |
 | **python-docx** | 提取/生成 .docx | Step 2b/2c | ⬜ 可选 |
 | **fpdf2 (>=2.5.1)** | 生成中文 PDF 报告 | Step 2b/6d | ⬜ 可选 |
-| **numpy** | 图表数据处理 | Step 7g | ⬜ 可选 |
-| **matplotlib** | 科研图表生成 | Step 7g | ⬜ 可选 |
-| **Pillow** | 图片生成/海报 | Step 7g | ⬜ 可选 |
+| **numpy** | 图表数据处理 | Step 7.10 | ⬜ 可选 |
+| **matplotlib** | 科研图表生成 | Step 7.10 | ⬜ 可选 |
+| **Pillow** | 图片生成/海报 | Step 7.10 | ⬜ 可选 |
 | **Zotero MCP Server** | 对话读写 Zotero 文库 | Step 6-7 | ⬜ 可选 |
 
 ---
@@ -414,12 +429,12 @@ fi
 | `scripts/auto_sd_downloader.py` | 5 | SD 全自动下载（断点续跑） |
 | `scripts/organize_zotero.py` | 6 | 生成 Zotero 文库架构 |
 | `scripts/setup_zotero.py` | 6 | Zotero MCP 一键安装+配置 |
-| `scripts/learn_journal_style.py` | 7.1 | 目标期刊风格学习 🆕 |
-| `scripts/generate_section_blueprints.py` | 7.1 | 章节蓝图生成 🆕 |
+| `scripts/learn_journal_style.py` | 7.2 | 目标体裁/文档风格学习 🆕 |
+| `scripts/generate_section_blueprints.py` | 7.2 | 章节蓝图生成 🆕 |
 | `scripts/batch_read_pdfs.py` | 7 | 批量提取 PDF 全文文本 |
-| `scripts/citation_audit.py` | 7h | 写后引用审计 🆕 |
-| `scripts/generate_figures.py` | 7g | 科研图表生成 🆕 |
-| `scripts/md_to_pdf.py` | 2/3/4/7f | Markdown → PDF 转换器 |
+| `scripts/citation_audit.py` | 7.11 | 写后引用审计 🆕 |
+| `scripts/generate_figures.py` | 7.10 | 科研图表生成 🆕 |
+| `scripts/md_to_pdf.py` | 2/3/4/7.9 | Markdown → PDF 转换器 |
 | `scripts/md_to_docx.py` | 7/8 | Markdown → DOCX 转换器 |
 | `config/publishers.toml` | 5 | 集中式出版社知识库 |
 
@@ -455,12 +470,12 @@ fi
 
 | `references/search-query-frameworks.md` | Step 3 — 检索查询框架参考 |
 | `references/rcs-rubric.md` 🆕 | Step 4 — 主题匹配度评鉴启发指南（RCS 启发） |
-| `references/literature-review-matrix-schema.md` | Step 7.0 — 13 列综述矩阵定义 |
+| `references/literature-review-matrix-schema.md` | Step 7.1 — 13 列文献证据矩阵定义 |
 | `references/literature-review-docx-guide.md` | Step 7 — 综述 DOCX 写作结构 |
 | `references/gbt7714-2015-citation-format.md` | Step 7 — GB/T 7714 引用格式 |
-| `references/citation-audit-guide.md` | Step 7h — 引用审计方法论 |
+| `references/citation-audit-guide.md` | Step 7.11 — 引用审计方法论 |
 | `references/direct-api-search-fallback.md` | Step 4 — search_by_topic.py 不可用时的直接 API 检索方案 |
-| `references/nature-figure-style-guide.md` | Step 7g — 科研图表设计规则 |
+| `references/nature-figure-style-guide.md` | Step 7.10 — 科研图表设计规则 |
 | `references/publisher-access-matrix.md` | Step 5 — 出版商下载可行性对照表 |
 | `agents/known_pitfalls.md` 🆕 | 全部 — 已知陷阱与故障排除 |
 
