@@ -340,6 +340,26 @@ pre_review:
 - [ ] 向用户明确说明下一步：生成论文大纲与关键词（Step 2）
   > **下一步 → Step 2：** 选题预审通过（🟢绿灯）后，基于聚焦的研究方向，生成论文大纲与关键词清单。
 
+### CHECKPOINT 1 — CP-TOPIC
+
+进入 Step 2，或基于主题直接生成检索/写作 handoff 前，输出 soft checkpoint 记录当前主题依据；它默认不阻拦继续。只有主题信息不足以支撑当前动作时，才设为 `status: blocked` 并请用户补充。
+
+```md
+## CHECKPOINT 1 — CP-TOPIC
+
+entry_mode: normal_chain
+status: confirmed_by_workflow
+blocks_next: none unless topic basis is insufficient
+must_confirm: false
+
+summary:
+- 聚焦主题、研究问题、方法路线、风险等级和 search_tier 已写入 `研究主题.md`。
+- Agent 可基于该主题继续生成大纲；如用户直接跳到 Step 3/4，可由后续 Step 用 `satisfied_by_user_artifact` 或 `satisfied_by_agent_reconstruction` 满足本 checkpoint。
+
+optional_confirmation:
+- “确认 CP-TOPIC”
+```
+
 ---
 
 ## 9. 故障排除 (Troubleshooting)

@@ -79,6 +79,7 @@
 3. 不得为了推进下载猜测 DOI。标题匹配到多个候选、年份/作者冲突或置信度不足时，写入 `unresolved_download_items.md` 并请用户确认。
 4. 中文论文多数没有真实 DOI，必须以 `source=cnki|wanfang` + `article_url` 或 `source_id` 路由，不把 `cnki.xxx` / `wanfang.xxx` 当作英文 DOI。
 5. 直达模式只做“用户指定文献下载”，不生成 Step 4 的评分、Tier、饱和度或 PRISMA 报告。
+6. 直达模式只需要确认下载清单和登录状态；不得要求用户补跑 Step 1-4。
 
 **direct_download_manifest 推荐格式：**
 
@@ -98,25 +99,45 @@
 - DOI + 中文 URL：英文 DOI 用 `--papers`；中文条目写入 `中文论文元数据.json` 后用 `--chinese-input`。
 - 标题-only：先完成解析和 manifest，再只对 `status=ready` 的条目启动下载。
 
-### 6b. CDP 登录门控 🚧 硬性规则
+### 6b. CHECKPOINT W — CP-DOWNLOAD-LOGIN 🚧 精准触发规则
 
-> **两个独立门控，分阶段触发。Sci-Hub 不需要门控。中文和英文各自独立确认。**
+> **两个独立门控，分阶段触发。Sci-Hub 不需要门控。中文和英文各自独立确认。门控由 access_probe 结果触发，不由 publisher strategy 一刀切触发。**
 
-**中文门控（Phase 1）：** Sci-Hub 后台启动的同时立即触发。仅提示 CNKI/万方。
+**不触发范围：** Sci-Hub、OA / `direct_http`、`skip`、校园 IP 已可访问、已有 cookie/session 已可访问。
 
-**英文门控（Phase 2）：** Sci-Hub 完成后触发。仅对剩余需 CDP 的英文论文提示。
+**触发范围：** login wall、access denied、CARSI required、PDF link 缺失且页面显示权限不足。
 
-**不适用范围：** Sci-Hub（免费访问）、OA 直连 HTTP 下载（Frontiers、Beilstein 等）。
+**access_probe 判定表：**
+
+| access_probe | 含义 | 是否触发 CP-DOWNLOAD-LOGIN |
+|--------------|------|:--:|
+| `scihub` | Sci-Hub 轮次处理，免费路径 | 否 |
+| `direct_http` / `oa` | OA 或直接 HTTP 下载 | 否 |
+| `skip` | 自动化不可行或需人工下载 | 否 |
+| `ip_access_ok` | 校园 IP / VPN 已授权，可访问 PDF | 否 |
+| `cookie_access_ok` | CDP 中已有可用登录 cookie/session | 否 |
+| `login_required` | 出版商登录墙或 SSO 页面 | 是 |
+| `access_denied` | 页面显示无权限/未订阅/无法下载 | 是 |
+| `carsi_required` | CNKI/万方需要 CARSI 机构登录 | 是 |
+
+> **重要：** 没有 cookie 不等于没有权限。校园网 IP 授权通常没有个人 cookie，只要实际 article/PDF probe 可访问，就应判为 `ip_access_ok`，不得要求用户登录。
+
+**中文门控（Phase 1）：** 仅当 CNKI/万方 preflight 或 article probe 返回 `carsi_required` / `login_required` / `access_denied` 时触发。
+
+**英文门控（Phase 2）：** Sci-Hub 完成后，仅对剩余英文论文中 `access_probe` 需要登录的 publisher 触发。
 
 **执行流程：**
 
 ```
 Phase 1:
 1. Sci-Hub 后台启动（免费，不阻塞）
-2. 🚧 中文登录门控立即显示
+2. 🔍 中文源 access_probe
+   ├─ ip_access_ok / cookie_access_ok → 直接执行中文下载
+   └─ carsi_required / login_required / access_denied → 显示中文登录门控
+3. 🚧 中文登录门控（仅 probe 需要时显示）
    "CNKI/万方需要 CARSI 机构登录。
     🚀 Agent 将自动启动交互式 CDP 会话（同一条命令内，不会断连）。"
-3. 🚀 Agent 执行交互式 CDP 启动（使用 batch_chinese_search.sh --login-only）：
+4. 🚀 Agent 执行交互式 CDP 启动（使用 batch_chinese_search.sh --login-only）：
    a) Agent 启动一条长驻 exec_command（yield_time_ms=60000）：
         bash scripts/batch_chinese_search.sh --login-only
    b) 脚本自动处理：
@@ -127,26 +148,29 @@ Phase 1:
    e) 用户完成登录后回复「已登录」
    f) Agent 调用 write_stdin("go\n")，脚本继续
    g) 脚本打印 CHINESE_CDP_READY → Agent 确认 CDP 可用
-4. Agent 执行 Chinese CDP 下载（unified_download_router.py 连接同一 9223 端口）
+5. Agent 执行 Chinese CDP 下载（unified_download_router.py 连接同一 9223 端口）
 
 Phase 2:
-5. 等待 Sci-Hub 完成
-6. 若有剩余英文 CDP 论文 → 🚧 英文登录门控
+6. 等待 Sci-Hub 完成
+7. 对剩余英文 CDP 论文执行 access_probe
+   ├─ direct_http / oa / ip_access_ok / cookie_access_ok → 直接下载
+   └─ login_required / access_denied → 🚧 英文登录门控
    Agent 执行同样的交互式 CDP 启动，导航到对应出版社首页：
    "[ScienceDirect CDP]  elsevier (sciencedirect.com)
     [Generic CDP]  ieee (ieeexplore.ieee.org), acs (pubs.acs.org), ..."
-7. 🚀 Agent 自动启动交互式 CDP 会话（同一条命令内）：
+8. 🚀 Agent 自动启动交互式 CDP 会话（同一条命令内）：
    a) 启动 exec_command：检查/启动 CDP Chrome → 导航到出版社首页
    b) 打印 === LOGIN_REQUIRED === → 用户登录后告知 → Agent write_stdin("go\n")
    c) 脚本确认 CDP 可用后退出
-8. Agent 执行 English CDP 下载（R2 SD → R3 Generic）
+9. Agent 执行 English CDP 下载（R2 SD → R3 Generic）
 ```
 
 **强制要求：**
 - Agent 禁止在用户确认登录前调用 `unified_download_router.py`（除 `--dry-run` 外）
-- Agent 必须先运行 `--dry-run` 或 `--test` 确认路由，再提示登录
+- Agent 必须先运行 `--dry-run` / `--test` / `--check-session` 或等价 article/PDF access probe，再提示登录
 - 推荐使用 `--require-login-confirm` 参数启动路由器，由脚本层面再次门控
 - **CDP 启动和下载如果跨命令，必须在同一条 exec_command session 内完成**
+- checkpoint 块的 `entry_mode` 可为 `normal_chain` 或 `direct_entry`；`status` 必须在用户明确“已登录，确认 CP-DOWNLOAD-LOGIN”或等价明确语义后才可视为 confirmed。
 
 **命令示例：**
 
@@ -176,15 +200,17 @@ python3 scripts/unified_download_router.py --test 10.1021/acsnano.4c00001 --port
 ```
 Phase 1 ──────────────────────────────────────────────────
   Sci-Hub 启动（后台线程，免费，不需登录）
-  🚧 中文登录门控（立即显示）
-     CNKI/万方 → 用户确认 → Chinese CDP 启动
+  🔍 中文源 access_probe
+     ip_access_ok / cookie_access_ok → Chinese CDP 启动
+     carsi_required / login_required / access_denied → 用户确认 → Chinese CDP 启动
      Sci-Hub 和 Chinese CDP 可能同时跑
 
 Phase 2 ──────────────────────────────────────────────────
   等待 Sci-Hub 完成
   若剩余英文 CDP 论文（SD / Generic）:
-    🚧 英文登录门控
-       Elsevier, IEEE, Wiley, ACS, ... → 用户确认
+    🔍 英文 access_probe
+       ip_access_ok / cookie_access_ok → 直接执行 CDP
+       login_required / access_denied → 用户确认
        → English CDP 启动（R2 SD → R3 Generic）
 
 Phase 3 ──────────────────────────────────────────────────

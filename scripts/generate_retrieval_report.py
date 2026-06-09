@@ -51,7 +51,9 @@ def _parse_md_table(md_path: str) -> list[dict]:
     Handles tables with columns: DOI/source_id, Title/标题, Year/年份,
     Source/来源, Score/评分, Tier, Flags/旗标, Citations/引用,
     influential_citations, Sub-topic/子课题, plus Step 3 traceability
-    columns such as search_task_id, chapter_id, chapter_title, evidence_type.
+    columns such as search_task_id, chapter_id, chapter_title, evidence_type,
+    plus verification_status / verification_confidence / warn_class /
+    verified_sources when Step 4a credibility verification is enabled.
     """
     with open(md_path, "r", encoding="utf-8") as f:
         text = f.read()
@@ -115,6 +117,14 @@ def _parse_md_table(md_path: str) -> list[dict]:
             col_map["chapter_title"] = idx
         elif "evidence_type" in col_clean or "证据类型" in col_clean:
             col_map["evidence_type"] = idx
+        elif "verification_status" in col_clean or "可信度状态" in col_clean or "验证状态" in col_clean:
+            col_map["verification_status"] = idx
+        elif "verification_confidence" in col_clean or "可信度置信" in col_clean or "验证置信" in col_clean:
+            col_map["verification_confidence"] = idx
+        elif "warn_class" in col_clean or "warning_class" in col_clean or "风险类别" in col_clean or "警告类别" in col_clean:
+            col_map["warn_class"] = idx
+        elif "verified_sources" in col_clean or "验证来源" in col_clean or "可信来源" in col_clean:
+            col_map["verified_sources"] = idx
         elif "doi" in col_clean or "source_id" in col_clean or "标识" in col_clean:
             col_map["doi"] = idx
         elif "title" in col_clean or "标题" in col_clean or "题目" in col_clean:
@@ -179,6 +189,11 @@ def _escape_bibtex(s: str) -> str:
     return s
 
 
+def _escape_bibtex_note(s: str) -> str:
+    """Escape note text while preserving machine-readable note keys."""
+    return _escape_bibtex(s).replace("\\_", "_")
+
+
 def _bibtex_key(authors_str: str, year: str, title: str) -> str:
     """Generate a BibTeX citation key: FirstAuthorYear_FirstWord."""
     first_author = authors_str.split(",")[0].split(" and ")[0].strip() if authors_str else "Unknown"
@@ -222,6 +237,10 @@ def _generate_xlsx(rows: list[dict], output_path: str):
         ("chapter_id", "chapter_id"),
         ("chapter_title", "章节标题"),
         ("evidence_type", "证据类型"),
+        ("verification_status", "可信度状态"),
+        ("verification_confidence", "可信度置信"),
+        ("warn_class", "风险类别"),
+        ("verified_sources", "验证来源"),
         ("doi", "DOI"),
         ("title", "标题"),
         ("abstract", "摘要"),
@@ -253,6 +272,12 @@ def _generate_xlsx(rows: list[dict], output_path: str):
         "T2": PatternFill(start_color="BDD7EE", end_color="BDD7EE", fill_type="solid"),  # blue
         "T3": PatternFill(start_color="FCE4D6", end_color="FCE4D6", fill_type="solid"),  # orange
     }
+    verification_fills = {
+        "VERIFIED": PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid"),
+        "VERIFIED_LOCAL": PatternFill(start_color="D9EAD3", end_color="D9EAD3", fill_type="solid"),
+        "WARN": PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid"),
+        "REJECT": PatternFill(start_color="F4CCCC", end_color="F4CCCC", fill_type="solid"),
+    }
 
     thin_border = Border(
         left=Side(style="thin", color="D9D9D9"),
@@ -281,6 +306,8 @@ def _generate_xlsx(rows: list[dict], output_path: str):
             # Color-code Tier column
             if key == "tier" and value in tier_fills:
                 cell.fill = tier_fills[value]
+            if key == "verification_status" and str(value).upper() in verification_fills:
+                cell.fill = verification_fills[str(value).upper()]
             # Wrap text for abstract column
             if key == "abstract":
                 cell.alignment = Alignment(vertical="top", wrap_text=True)
@@ -288,7 +315,9 @@ def _generate_xlsx(rows: list[dict], output_path: str):
     # Column widths
     col_widths = {
         "search_task_id": 16, "chapter_id": 12, "chapter_title": 24,
-        "evidence_type": 16, "doi": 38, "title": 60, "abstract": 80,
+        "evidence_type": 16, "verification_status": 18,
+        "verification_confidence": 14, "warn_class": 24, "verified_sources": 28,
+        "doi": 38, "title": 60, "abstract": 80,
         "authors": 25, "year": 7,
         "journal": 30, "source": 14, "score": 7, "tier": 7,
         "citations": 10, "influential_citations": 13, "flags": 12, "subtopic": 14,
@@ -331,6 +360,10 @@ def _generate_bibtex(rows: list[dict], output_path: str):
         search_task_id = row.get("search_task_id", "")
         chapter_id = row.get("chapter_id", "")
         evidence_type = row.get("evidence_type", "")
+        verification_status = row.get("verification_status", "")
+        verification_confidence = row.get("verification_confidence", "")
+        warn_class = row.get("warn_class", "")
+        verified_sources = row.get("verified_sources", "")
         is_internal_source_id = doi.lower().startswith(("cnki.", "wanfang."))
 
         cite_key = _bibtex_key(authors_raw, year, title)
@@ -353,6 +386,14 @@ def _generate_bibtex(rows: list[dict], output_path: str):
             note_parts.append(f"chapter_id: {chapter_id}")
         if evidence_type:
             note_parts.append(f"evidence_type: {evidence_type}")
+        if verification_status:
+            note_parts.append(f"verification_status: {verification_status}")
+        if verification_confidence:
+            note_parts.append(f"verification_confidence: {verification_confidence}")
+        if warn_class:
+            note_parts.append(f"warn_class: {warn_class}")
+        if verified_sources:
+            note_parts.append(f"verified_sources: {verified_sources}")
         if is_internal_source_id:
             note_parts.append(f"source_id: {doi}")
         note = " | ".join(note_parts)
@@ -381,7 +422,7 @@ def _generate_bibtex(rows: list[dict], output_path: str):
         if url:
             lines.append(f"  url       = {{{_escape_bibtex(url)}}},")
         if note:
-            lines.append(f"  note      = {{{_escape_bibtex(note)}}},")
+            lines.append(f"  note      = {{{_escape_bibtex_note(note)}}},")
         lines.append("}")
         lines.append("")
 

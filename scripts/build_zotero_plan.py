@@ -23,7 +23,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 DEFAULT_ROOT = "论文文献库"
 CONFIRM_COLLECTION = "待确认集合"
 PDF_EXTS = {".pdf"}
@@ -33,6 +33,7 @@ def normalize_text(value: str | None) -> str:
     if not value:
         return ""
     value = re.sub(r"[{}]", "", str(value))
+    value = value.replace(r"\_", "_")
     value = re.sub(r"\\[a-zA-Z]+\s*", " ", value)
     value = re.sub(r"\s+", " ", value)
     return value.strip()
@@ -155,6 +156,10 @@ def parse_bib(path: Path) -> list[dict[str, Any]]:
         subtopic = extract_note_value(note, "subtopic")
         source = fields.get("source") or extract_note_value(note, "source")
         source_id = fields.get("source_id") or extract_note_value(note, "source id") or extract_note_value(note, "source_id")
+        verification_status = extract_note_value(note, "verification_status")
+        verification_confidence = extract_note_value(note, "verification_confidence")
+        warn_class = extract_note_value(note, "warn_class")
+        verified_sources = extract_note_value(note, "verified_sources")
         records.append({
             "entry_type": entry_type,
             "citekey": citekey,
@@ -170,6 +175,10 @@ def parse_bib(path: Path) -> list[dict[str, Any]]:
             "subtopic": subtopic,
             "source": source,
             "source_id": source_id,
+            "verification_status": verification_status or "WARN",
+            "verification_confidence": verification_confidence or ("low" if not verification_status else ""),
+            "warn_class": warn_class or ("legacy-unverified" if not verification_status else ""),
+            "verified_sources": verified_sources,
             "note": note,
         })
     return records
@@ -239,6 +248,10 @@ def merge_chinese_metadata(record: dict[str, Any], index: dict[str, dict[str, An
         "abstract": ["abstract", "摘要"],
         "source": ["source"],
         "source_id": ["source_id", "id"],
+        "verification_status": ["verification_status", "可信度状态", "验证状态"],
+        "verification_confidence": ["verification_confidence", "可信度置信", "验证置信"],
+        "warn_class": ["warn_class", "风险类别", "警告类别"],
+        "verified_sources": ["verified_sources", "验证来源", "可信来源"],
     }
     for target, aliases in field_map.items():
         if merged.get(target):
@@ -459,7 +472,12 @@ def build_records(
         chinese_like = language == "zh-CN" or source in {"cnki", "wanfang"}
         metadata_incomplete = bool(chinese_like and not (source_id and record.get("article_url") and record.get("authors") and record.get("year") and record.get("publication_title")))
         method, import_status = import_method({**record, "language": language}, metadata_incomplete)
+        verification_status = (record.get("verification_status") or "WARN").upper()
+        if verification_status == "REJECT":
+            method, import_status = "none", "rejected_do_not_import"
         pdf_path, pdf_source, candidates, attachment_status, attachment_action = match_pdfs(record, pdfs)
+        if verification_status == "REJECT":
+            attachment_status, attachment_action = "rejected", "none"
         confidence = candidates[0]["match_confidence"] if candidates else "none"
         records.append({
             "record_id": f"stable-{idx:03d}",
@@ -477,6 +495,10 @@ def build_records(
             "tier": record.get("tier", ""),
             "score": record.get("score", ""),
             "subtopic": record.get("subtopic", ""),
+            "verification_status": verification_status,
+            "verification_confidence": record.get("verification_confidence", "low"),
+            "warn_class": record.get("warn_class", "legacy-unverified"),
+            "verified_sources": record.get("verified_sources", ""),
             "collection_path": choose_collection(record, root, structure_rows, has_structure),
             "collection_key": "",
             "tags": infer_tags(record, structure_rows),
@@ -572,15 +594,17 @@ def write_review(path: str, plan: dict[str, Any]) -> None:
     lines += [
         "## 对照表",
         "",
-        "| 序号 | citekey | 标题 | 推荐集合路径 | 导入方式 | 导入状态 | PDF状态 | 附件动作 | PDF文件 |",
-        "|------|---------|------|--------------|----------|----------|---------|----------|---------|",
+        "| 序号 | citekey | 标题 | 可信度 | 风险类别 | 推荐集合路径 | 导入方式 | 导入状态 | PDF状态 | 附件动作 | PDF文件 |",
+        "|------|---------|------|--------|----------|--------------|----------|----------|---------|----------|---------|",
     ]
     for i, rec in enumerate(plan["records"], start=1):
         lines.append(
-            "| {i} | {citekey} | {title} | {collection} | {method} | {import_status} | {att_status} | {att_action} | {pdf} |".format(
+            "| {i} | {citekey} | {title} | {verification} | {warn_class} | {collection} | {method} | {import_status} | {att_status} | {att_action} | {pdf} |".format(
                 i=i,
                 citekey=truncate(rec.get("citekey"), 28),
                 title=truncate(rec.get("title"), 60),
+                verification=truncate(rec.get("verification_status"), 18),
+                warn_class=truncate(rec.get("warn_class"), 28),
                 collection=truncate(" / ".join(rec.get("collection_path") or []), 60),
                 method=rec.get("import_method", ""),
                 import_status=rec.get("import_status", ""),

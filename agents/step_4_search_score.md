@@ -46,6 +46,14 @@
 | search_tasks | Step 3 `检索方案.md` | YAML/Markdown | ✅ |
 | 检索执行参数 | search_tasks 中的 tier + L1/L2/L3 路由配置 | 文本 | ✅ |
 
+**独立入口规则：**
+
+如果用户已有检索方案、检索式、关键词组合、数据库清单、文献表或 BibTeX，可直接从 Step 4 开始，不要求回跑 Step 3。Agent 应在当前 Step 内完成：
+
+1. 将用户材料整理为最小 `search_tasks` 或 direct scoring/import plan。
+2. 输出 `CHECKPOINT 3 — CP-SEARCH`，设置 `entry_mode: direct_entry` 或 `partial_artifact`，`status: satisfied_by_user_artifact` 或 `satisfied_by_agent_reconstruction`。
+3. 用户明确“确认 CP-SEARCH”后，才执行真实多源检索命令；生成 dry-run 摘要、评分用户已有文献表、格式转换或报告生成不需要补跑完整 Step 3。
+
 **Step 3 字段读取规则：**
 
 | 字段 | 用途 |
@@ -110,6 +118,66 @@
 
 > **中文查询路由：** 查询含中文字符时，CNKI（L1 主检索）+ Wanfang Data（L2 补充）双路检索。
 
+### 4a 文献可信度三态机制
+
+> 4a 的目标是判断“文献条目本身是否可追溯、可入库、可引用候选”，不是判断它是否支撑某个 claim；claim 支撑关系留到 Step 7.7/7.11。
+
+**三态定义：**
+
+| 状态 | 判定 | 后续处理 |
+|------|------|----------|
+| `VERIFIED` | 可信公开源返回稳定 DOI/ID，且 title/year/authors 基本匹配 | 可进入 4b-4d，按评分与 Tier 参与筛选 |
+| `VERIFIED_LOCAL` | CNKI/万方等中文源有 `source_id` 或 `article_url`，且 title/authors/year/publication_title 可追溯 | 可进入 4b-4d；不得因无 DOI 降级或剔除 |
+| `WARN` | 存在真实不确定性：标题/年份/作者冲突、摘要缺失、来源弱、无稳定详情页、疑似重复、元数据残缺 | 保留进入人工审查队列；可评分，但写作时只能作背景/待补查线索 |
+| `REJECT` | DOI 指向另一篇论文、关键元数据明显冲突、0 可追溯来源、明确撤稿或假条目 | 不进入最终 T1-T3 主表和 `文献库.bib`；只在检索报告异常清单中保留痕迹 |
+
+**关键规则：**
+1. `VERIFIED` 不要求至少 2 个来源一致。Crossref / OpenAlex / Semantic Scholar / PubMed / arXiv 任一可信源即可确认，只要稳定标识与核心元数据闭环。
+2. 多源一致只提高 `verification_confidence=high`，不是进入 `VERIFIED` 的硬门槛。
+3. 中文无 DOI 文献默认不是 `REJECT`。CNKI/万方条目只要有稳定详情页或 source_id，并能追溯标题、作者、年份、来源，即标为 `VERIFIED_LOCAL`。
+4. WARN 是“需要人审或补证据”，不是“低质量文献”。中文核心、会议论文、新预印本和数据库覆盖弱领域不得因单源而自动降为 WARN。
+5. 撤稿或表达关注应优先标记 `REJECT`；如只是 corrigendum/erratum，按具体影响写入 `warn_class`。
+
+**4a 必写字段：**
+
+| 字段 | 值域/示例 | 说明 |
+|------|-----------|------|
+| `verification_status` | `VERIFIED` / `VERIFIED_LOCAL` / `WARN` / `REJECT` | 文献条目可信度三态 |
+| `verification_confidence` | `high` / `medium` / `low` | 多源一致或强来源为 high；单可信源通常 medium；弱来源/残缺为 low |
+| `warn_class` | `metadata-mismatch`, `missing-abstract`, `weak-source`, `no-stable-url`, `legacy-unverified`, `retracted` | 仅 WARN/REJECT 必填；VERIFIED 可空 |
+| `verified_sources` | `crossref`, `openalex`, `semantic_scholar`, `cnki`, `wanfang` | 实际确认过的来源，多个用逗号分隔 |
+
+`检索文献表.md` 主表必须包含上述 4 列；`generate_retrieval_report.py` 会将其写入 Excel 和 BibTeX note，供 Step 6/7 继续读取。
+
+### CHECKPOINT W — CP-CITATION-WARN
+
+当 4a 产生的异常会改变最终 T1-T3 纳入策略、下游关键引用策略，或涉及 `REJECT` 条目的保留/剔除处置时，才输出 warning checkpoint。仅把 `WARN` 条目列入背景性候选、综述矩阵候选、待补查清单或异常清单，不触发 checkpoint。
+
+```md
+## CHECKPOINT W — CP-CITATION-WARN
+
+entry_mode: normal_chain|direct_entry|repair|partial_artifact
+status: blocked
+blocks_next: final T1-T3 library and downstream citation use
+must_confirm: true
+
+summary:
+- 列出会影响主表纳入、关键引用或 REJECT 处置的 WARN/REJECT 条目数量、warn_class 分布和风险范围。
+
+user_options:
+1. 删除 REJECT，WARN 保留但标注
+2. 逐条审查 WARN/REJECT
+3. 回退补元数据或补检索来源
+
+does_not_block:
+- 将 WARN 作为背景候选或待补查线索
+- 在综述矩阵中保留候选记录并显式标注 warn_class
+- 低风险主题归类、去重、来源统计和异常清单整理
+
+required_confirmation:
+- “确认 CP-CITATION-WARN”
+```
+
 ### 英文源执行规则（公开 API，无需认证，直接跑）
 
 > 英文源全部是公开 API，与机构账号无关。执行时按 tier 选择启用的源，遇错处理即可，无需等待用户。
@@ -152,7 +220,7 @@
 | **Wanfang** | 用户无机构账号 | 📝 确认后跳过，报告标注「中文源: 用户无机构账号」 |
 | **Wanfang** | 用户选择跳过 | 📝 报告标注「中文源: 用户跳过」 |
 
-**中文源认证流程（CDP/CARSI 时——先确认账号，再交互式批量检索）：**
+**中文源认证流程（CDP/CARSI 时——CHECKPOINT W — CP-DOWNLOAD-LOGIN）：**
 
 ```
 🔐 检测到 CNKI/万方需要 CARSI 机构登录。
@@ -195,6 +263,8 @@
    > 可以建议备用方案：联系学校图书馆获取 VPN、或使用 iData 等第三方镜像。
    ⚠️ 确认后继续英文源检索，不阻塞流程。
 ```
+
+> 该认证 checkpoint 的 `entry_mode` 可为 `normal_chain` 或 `direct_entry`。用户明确完成登录并确认 `CP-DOWNLOAD-LOGIN` 后，Agent 才能继续中文源检索；英文公开 API 检索不受该 checkpoint 阻塞。
 
 **queries.json 模板（Agent 动态生成）：**
 ```json
@@ -700,14 +770,14 @@ fi
 
 > 以下检查项**全部通过**才能进入 4h 完成。任一未通过 → 回到对应子步骤修复。
 
-- [ ] 4a 引文验证已完成——无效 DOI 已剔除
+- [ ] 4a 文献可信度验证已完成——每条保留文献均有 `verification_status` / `verification_confidence` / `verified_sources`；WARN/REJECT 均有 `warn_class`
 - [ ] Step 3 `search_tasks` 已展开，每条结果保留 search_task_id/chapter_id/evidence_type/tier/source
 - [ ] 4b DOI 去重已完成——无重复条目
 - [ ] 4c 五维度评分已完成——参考了 rcs-rubric 定性启发
 - [ ] 4d Tier 分级已完成——T4 已剔除
 - [ ] 🆕 4e 引文网络扩展已完成（若有 T1 触发）——新论文已评分+分级
 - [ ] 🆕 4f 饱和度曲线已生成（若 ≥ 30 篇）
-- [ ] 🔴 4g.1 `.md` 检索文献表已写入——含饱和度+PRISMA-S 摘要，仅含 T1-T3
+- [ ] 🔴 4g.1 `.md` 检索文献表已写入——含饱和度+PRISMA-S 摘要+可信度字段，仅含 T1-T3
 - [ ] 🔴 4g.2 `generate_retrieval_report.py` 已成功执行——`.xlsx` + `.bib` 已生成
 - [ ] 🔴 4g.3 饱和度快照 `saturation_snapshot.json` 存在（若 ≥ 30 篇）或已标注跳过原因
 

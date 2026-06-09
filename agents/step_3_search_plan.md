@@ -46,6 +46,14 @@
 | 章节证据需求表 | Step 2 `大纲关键词.md` | .md | ✅ |
 | 术语映射表 | Step 2 → .skill-state/term_aliases.md | .md | ✅ |
 
+**独立入口规则：**
+
+如果用户已有大纲、章节列表、开题报告、论文草稿或导师给定目录，可直接从 Step 3 开始，不要求回跑 Step 1/2。Agent 应在当前 Step 内完成：
+
+1. 从用户材料中抽取最小可用的章节结构、关键词和证据需求。
+2. 输出 soft `CHECKPOINT 2 — CP-OUTLINE`，设置 `entry_mode: direct_entry`，`status: satisfied_by_user_artifact` 或 `satisfied_by_agent_reconstruction`，记录“当前检索将基于哪份大纲/目录”。
+3. 大纲可用时直接生成 `search_tasks`；只有章节结构、主题对象或关键词缺失到无法安全生成检索方案时，才设为 `status: blocked` 并请用户补充。
+
 **Step 2 字段读取规则：**
 
 | 字段 | 用途 |
@@ -311,6 +319,27 @@ python3 scripts/search_by_topic.py --preflight
 ### 下一步提示
 - [ ] 向用户明确说明下一步：执行多渠道检索（Step 4）
   > **下一步 → Step 4：** 按检索方案的 L1→L2→L3 分层路由执行多渠道检索，对结果进行 5 维度评分和 Tier 分级筛选。
+
+### CHECKPOINT 3 — CP-SEARCH
+
+执行 Step 4 多源检索命令前，必须输出 checkpoint 块并等待用户明确确认。
+生成或修改 `检索方案.md`、search_tasks、关键词扩展和 dry-run 摘要不触发本 checkpoint。
+
+```md
+## CHECKPOINT 3 — CP-SEARCH
+
+entry_mode: normal_chain|direct_entry|resume|repair|partial_artifact
+status: confirmed_by_workflow|satisfied_by_user_artifact|satisfied_by_agent_reconstruction
+blocks_next: Step 4 multi-source search execution
+must_confirm: true
+
+summary:
+- `检索方案.md` 已包含 search_tasks、L1/L2/L3 路由、tier、中文源策略和概念块布尔查询。
+- 用户可确认执行真实检索命令、要求轻量修改检索式，或暂停补充数据库/关键词偏好。
+
+required_confirmation:
+- “确认 CP-SEARCH”
+```
 
 ---
 

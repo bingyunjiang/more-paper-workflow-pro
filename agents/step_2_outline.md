@@ -409,6 +409,26 @@ main_innovation_claim: ""
 - [ ] 向用户明确说明下一步：生成结构化检索方案（Step 3）
   > **下一步 → Step 3：** 大纲定稿后，生成结构化检索方案，按 L1→L2→L3 分层架构 + 概念块布尔构建执行文献检索。
 
+### CHECKPOINT 2 — CP-OUTLINE
+
+进入 Step 3，或基于大纲直接进入 Zotero 架构/写作蓝图前，输出 soft checkpoint 记录当前大纲依据；它默认不阻拦继续。只有大纲结构不足以支撑当前动作时，才设为 `status: blocked` 并请用户补充。
+
+```md
+## CHECKPOINT 2 — CP-OUTLINE
+
+entry_mode: normal_chain
+status: confirmed_by_workflow
+blocks_next: none unless outline basis is insufficient
+must_confirm: false
+
+summary:
+- `大纲关键词.md` 已包含章节大纲、关键词清单、章节证据需求表和 Step 3/6/7 handoff。
+- Agent 可基于该大纲继续生成检索方案；若用户从 Step 3 直接提供已有大纲，可在 Step 3 内用 `satisfied_by_user_artifact` 满足本 checkpoint。
+
+optional_confirmation:
+- “确认 CP-OUTLINE”
+```
+
 ---
 
 ## 9. 故障排除 (Troubleshooting)

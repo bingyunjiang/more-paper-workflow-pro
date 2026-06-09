@@ -84,6 +84,36 @@ python3 scripts/setup_zotero.py --smoke-test
 2. 在 `文献-Zotero架构对照.md/json` 中把集合创建、条目导入、PDF 附件标记为「后续手动处理」。
 3. 缺文件不是致命错误；应在 JSON 顶层写入 readiness、blocking_missing、nonblocking_missing、warnings 和 recommended_next_step。
 
+**独立入口规则：**
+如果用户已有 Zotero 文库、已有 PDF 目录、已有 BibTeX/CSL JSON 或只想整理某个集合，可直接从 Step 6 开始，不要求补跑 Step 1-5。Agent 可先读取 Zotero、生成对照表、检查重复、扫描 PDF、生成写入计划；只有即将实际修改 Zotero 这个外部持久状态时，才触发 `CP-ZOTERO-WRITE`。
+
+### CHECKPOINT W — CP-ZOTERO-WRITE（Zotero 外部状态写入确认）
+
+`CP-ZOTERO-WRITE` 不是 Step 6/7 的入口门，也不是读取 Zotero 前的许可门。它只表示：执行任何会改变 Zotero 文库的写操作前，必须输出 checkpoint 块并等待用户明确确认写入范围。只读操作、计划生成、查重和 dry-run 不触发本 checkpoint。
+
+```md
+## CHECKPOINT W — CP-ZOTERO-WRITE
+
+entry_mode: normal_chain|direct_entry|resume|repair|partial_artifact
+status: confirmed_by_workflow|satisfied_by_user_artifact|satisfied_by_agent_reconstruction
+blocks_next: actual Zotero write operations only
+must_confirm: true
+
+summary:
+- 即将创建/复用的集合数量
+- 即将导入、移动或更新的条目数量
+- WARN 待审项、REJECT 排除项和附件动作风险
+
+does_not_block:
+- 读取 Zotero 集合/条目/笔记/附件
+- 生成 `文献-Zotero架构对照.md/json`
+- 扫描 PDF 附件池
+- 查重报告和写入 dry-run
+
+required_confirmation:
+- “确认 CP-ZOTERO-WRITE”
+```
+
 ---
 
 ### 6a：根据 Step 2 大纲生成 Zotero 架构
@@ -166,6 +196,7 @@ python3 scripts/build_zotero_plan.py \
 | source/source_id | `openalex` / `crossref` / `cnki` / `wanfang`；中文条目必须有 `cnki.xxx` / `wanfang.xxx` |
 | DOI/URL | 真实 DOI 或详情页 URL；中文合成 ID 不得放入 DOI |
 | Tier/Score | 来自 BibTeX note 字段 |
+| 可信度状态 | 来自 Step 4 的 `verification_status` / `verification_confidence` / `warn_class` / `verified_sources` |
 | 推荐集合路径 | 如 `论文文献库 / 2-方法 / P1-D1 数值模拟` |
 | 推荐标签 | 来自 6a 标签方案，可多值 |
 | 条目导入方式 | 英文 DOI / 英文 BibTeX / 中文 CSL JSON / 手动补全 |
@@ -177,7 +208,7 @@ python3 scripts/build_zotero_plan.py \
 **JSON 执行源最低字段：**
 ```json
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "root_collection": "从大纲解析出的论文标题",
   "readiness": "complete|partial|blocked",
   "can_continue": true,
@@ -202,6 +233,10 @@ python3 scripts/build_zotero_plan.py \
       "tier": "T1",
       "score": "22",
       "subtopic": "S1: 子课题名称",
+      "verification_status": "VERIFIED_LOCAL",
+      "verification_confidence": "medium",
+      "warn_class": "",
+      "verified_sources": "cnki",
       "collection_path": ["论文文献库", "2-方法", "P1-D1 数值模拟"],
       "collection_key": "",
       "tags": ["P1-D1", "数值模拟"],
@@ -212,7 +247,7 @@ python3 scripts/build_zotero_plan.py \
       "matched_pdf_candidates": [],
       "zotero_item_key": "",
       "import_status": "pending|ready|metadata_incomplete|manual_required",
-      "attachment_status": "missing|found|already_attached|duplicate_candidate|conflict|unknown",
+      "attachment_status": "missing|found|already_attached|duplicate_candidate|conflict|unknown|rejected",
       "attachment_action": "skip|manual_drag|add_from_file_then_merge|wait_for_attach_tool|none",
       "existing_attachment_keys": [],
       "notes": ""
@@ -240,6 +275,9 @@ python3 scripts/build_zotero_plan.py \
 **质量要求：**
 - 每个 BibTeX 条目必须出现在对照表中。
 - 每个 T1/T2/T3 条目必须有推荐集合路径。
+- 每个条目必须保留 Step 4 的可信度字段；旧 BibTeX 缺失时标记 `verification_status=WARN`、`warn_class=legacy-unverified`，但不中断。
+- `verification_status=REJECT` 的记录不得进入 Zotero 写入队列；只保留在异常清单或补查候选中。
+- `verification_status=WARN` 的记录可进入计划表，但必须保留 `warn_class`，写入前作为待审项向用户展示。
 - 中文条目必须有 `source_id` 和 `article_url`；缺作者/年份/来源名称时必须列入「中文元数据待补全」清单。
 - 缺真实 DOI、缺 PDF、重复条目、无法判定集合的文献必须单独列出。
 - `文献-Zotero架构对照.json` 中所有用于机器执行的字段禁止截断；Markdown 中的截断不得反向污染 JSON。
@@ -312,7 +350,7 @@ zotero_get_collections()
 将 Step 4 的英文 BibTeX 条目和中文增强元数据低风险导入 Zotero，并把条目放入 6b 推荐的集合；PDF 附件默认只判断状态和处理策略，不自动挂载到已有条目。
 
 **推荐执行顺序：**
-1. 分流条目：按 `source` / `source_id` / 标题语言把英文国际文献与 CNKI/万方中文文献分开。
+1. 分流条目：先排除 `verification_status=REJECT`，再按 `source` / `source_id` / 标题语言把英文国际文献与 CNKI/万方中文文献分开；`WARN` 条目作为待审项展示。
 2. 英文元数据导入：有真实 DOI 时优先 `zotero_add_by_doi`；批量场景可用 `zotero_add_by_bibtex`。
 3. 中文元数据导入：优先用 `中文论文元数据.json` 构造 CSL JSON，通过 `zotero_add_by_csl_json` 创建条目；必要时再用 `zotero_update_item` 补全作者、年份、刊名、摘要、URL、language、Extra。旧名 `chinese_papers.json` / `chinese_metadata.json` 仅作为兼容输入。
 4. 查重：英文用 DOI/title；中文用 `source_id` / `article_url` / title+first_author+year，不用合成 ID 当 DOI 查重。

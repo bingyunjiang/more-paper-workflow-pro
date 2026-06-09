@@ -66,6 +66,9 @@
 
 > Step 7 不再直接把 `paper-temp/*.pdf` 当作唯一知识库。PDF 可以来自 Step 5、原有文件、后续补下载、手动整理目录，或已经存在于 Zotero 条目附件中。若 `pdf-附件池索引.json` 不存在，但 Zotero 条目已带 PDF 附件，则以 Zotero MCP 的 `zotero_get_item_children` / `zotero_get_attachment_path` / `zotero_get_item_fulltext` 为准，必要时再生成临时 `pdf-附件池索引.json` 供审计复用。
 
+**独立入口规则：**
+如果用户已有 Zotero 文库、已有草稿、已有参考文献、已有 PDF 目录或只要求撰写/续写指定章节，可直接从 Step 7 开始，不要求补跑 Step 1-6。Agent 应先构造最小证据映射：目标章节、大纲片段、可用 Zotero/PDF/笔记证据、引用风险；只有证据不足影响关键 claim 时，才触发 `CP-CITATION-WARN` 或建议回退补证据。
+
 ---
 
 ## 5. 标准输出 (Standard Outputs)
@@ -137,6 +140,9 @@
 - T1/T2/T3 均进入综述矩阵。T1/T2 是写作主证据，T3 作为背景、补充、反例或方法参照。
 - T4 已在 Step 4 剔除，默认不进入 Step 7；如用户要求补充，只能作为“候选补查文献”，不得直接引用。
 - 中文文献必须保留中文标题、作者、来源、年份、source/source_id、article_url；无真实 DOI 时不得用 `cnki.xxx` / `wanfang.xxx` 冒充 DOI。
+- 写作优先使用 `VERIFIED` / `VERIFIED_LOCAL` 且 Tier 为 T1/T2 的文献；T3 主要作背景、补充、反例或方法参照。
+- `WARN` 文献只能用于背景性描述、研究脉络或待补查线索，不能支撑关键结论、实验参数、性能提升、机制证明或强因果判断。
+- `REJECT` 文献不得进入综述矩阵、正文引用或 Zotero 写入计划；若用户要求保留，只能放入“补查候选/异常清单”。
 
 **仅有元数据/完整摘要的条目用途：**
 
@@ -145,6 +151,7 @@
 | 完整元数据 + 完整摘要，无 PDF | 综述矩阵的研究问题/方法概述/主题归类/背景句/待精读优先级 | 具体数据、实验参数、模型细节、强结论、页码级原文摘录 | Weak/Background |
 | 完整元数据，无摘要、无 PDF | 去重、集合归类、检索补全、参考文献候选 | 正文 claim 支撑 | Candidate only |
 | 元数据 + Zotero 笔记/标注，无 PDF | 若笔记/标注明确记录原文依据，可支撑对应 claim；同时标记需补 PDF | 超出笔记/标注范围的细节 | Moderate，需补全文 |
+| Step 4 `WARN` 文献 | 背景、研究脉络、待补查线索 | 关键结论、强 claim、实验数据、机制证明 | Weak/Background |
 
 > 摘要可以派上用场，但不能被当作全文。它适合判断“这篇文献研究什么、用了什么大类方法、与主题是否相关”，不适合支撑“作者具体发现了多少、参数如何设置、机制如何证明”这类强断言。
 
@@ -361,6 +368,7 @@ confidence: medium
   ① Segment — 将段落拆为可引用的 claim 片段
   ② Parse — 每个 claim 提取关键词 + 判断是否需要新引用
   ③ Match — 优先在综述矩阵、文献-Zotero架构对照.json、Zotero 集合内匹配已有证据
+     优先级：VERIFIED/VERIFIED_LOCAL + T1/T2 → VERIFIED/VERIFIED_LOCAL + T3 → WARN 背景性用途
   ④ Read — 读取 Zotero 笔记/标注/元数据；必要时读取 PDF 全文页段
   ⑤ Evaluate — 判断 Strong/Moderate/Weak，并记录支撑句或证据位置
   ⑥ Report — 每段写完后简要报告引文匹配结果
@@ -392,6 +400,7 @@ confidence: medium
 | **JSON 追溯** | 每条引用能追溯到 `文献-Zotero架构对照.json` 的 citekey/zotero_item_key/pdf_path |
 | **中文元数据完整** | 中文引用必须核对 title/authors/year/publication/source_id/article_url，不依赖 DOI |
 | **摘要级降权** | 只有摘要无全文的条目必须标记为 abstract_only，不能支撑强 claim |
+| **可信度降权** | Step 4 `WARN` 条目只能作背景；`REJECT` 条目禁止进入正文引用 |
 
 ### 7.9: 同行评审仿真（质量门）
 
@@ -437,6 +446,36 @@ python3 scripts/citation_audit.py 论文初稿.md --zotero-collection "论文文
 
 > Crossref / Semantic Scholar 摘要只能作为补充核验，不能替代 Zotero 条目和 PDF 原文。CNKI/万方中文文献尤其必须以本地元数据、详情页 URL、PDF 原文和 Zotero Extra/source_id 为审计依据。
 
+### CHECKPOINT W — CP-CITATION-WARN
+
+当 `WARN` 文献、弱引用、摘要级证据、无 PDF 条目或审计中的“不支撑/弱支撑”将被用于关键 claim 时，必须输出 checkpoint 块并等待用户明确确认。普通背景性描述、研究脉络说明、综述矩阵候选记录和待补查清单不触发 checkpoint。`REJECT` 仍禁止进入正文关键引用和 Zotero 写入计划。
+
+```md
+## CHECKPOINT W — CP-CITATION-WARN
+
+entry_mode: normal_chain|direct_entry|resume|repair|partial_artifact
+status: blocked
+blocks_next: using risky evidence in key claims
+must_confirm: true
+
+summary:
+- 列出异常文献/引用、风险类型和受影响 claim。
+
+user_options:
+1. 删除或替换异常引用
+2. 保留但标注为背景/待补证据
+3. 回退 Step 4/5/6 小闭环补证据
+4. 逐条人工审查
+
+does_not_block:
+- WARN 文献用于背景性描述、研究脉络或待补查线索
+- 摘要级证据用于领域概况、主题归类或精读优先级判断
+- 综述矩阵中的候选记录、异常清单和低风险描述性整理
+
+required_confirmation:
+- “确认 CP-CITATION-WARN”
+```
+
 ---
 
 ## 7. 质量门槛 (Quality Gates)
@@ -446,6 +485,7 @@ python3 scripts/citation_audit.py 论文初稿.md --zotero-collection "论文文
 - [ ] 7.2 目标体裁/文档风格：`style_sample_status.md/json` 已生成，Flash 或 Pro 模式已完成，style_profile.md 已生成
 - [ ] 防幻觉机制：每处引用均来自 Zotero 条目和实际 PDF/笔记/标注证据
 - [ ] T1/T2/T3 覆盖：矩阵覆盖 Step 6 中所有 T1/T2/T3，写作引用优先使用 T1/T2，T3 用途已标明
+- [ ] Step 4 可信度约束：关键 claim 均由 `VERIFIED` / `VERIFIED_LOCAL` 文献支撑；WARN 仅作背景；REJECT 未进入正文
 - [ ] 7.6.1 段落自查：每段一个工作 / 从证据向外写 / 动词校准 / 无虚假新颖性 / 段落流
 - [ ] 🆕 术语对齐：核心术语与 `.skill-state/term_aliases.md` 一致
 - [ ] 7.9 同行评审：五维评分全部 ≥ 5 分（<5 分已回退修复）
