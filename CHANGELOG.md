@@ -8,6 +8,59 @@
 
 ---
 
+## v1.0.9-20260609 (2026-06-08 至 2026-06-09)
+
+### Step 6 Zotero 文库管理升级 🆕
+
+- **新增 `scripts/build_zotero_plan.py`**：在真正写入 Zotero 前，先生成可审阅、可恢复、可追溯的 Step 6 计划产物
+  - `文献-Zotero架构对照.json`：机器执行源，完整保留集合、标签、导入方式、PDF 匹配和状态字段
+  - `文献-Zotero架构对照.md`：人类审阅版，用于快速检查文献归属、导入状态和附件状态
+  - `pdf-附件池索引.json`：扫描 Step 5 下载目录、原有 PDF、补下载目录和手动整理目录
+- **中文文献 Zotero 入库规则补齐**：CNKI/万方条目不再依赖 DOI，改用 `source_id` + `article_url` + 中文元数据生成 CSL JSON 条目
+- **附件策略更保守**：当前 Zotero MCP 不能直接向已有 item 挂载本地 PDF 时，默认只生成状态和建议动作，避免高风险重复挂载
+- **一致性检查强化**：要求 Zotero 集合、BibTeX/中文元数据、PDF 附件池和对照 JSON 四者互相可追溯
+- **本次补充修复**：
+  - `build_zotero_plan.py` 写入审阅版时自动创建父目录
+  - `organize_zotero.py` 支持 Step 2 标准格式中的 `章节大纲` 编号列表和 `关键词清单` 表格，避免把元信息标题误建成 Zotero 集合
+
+### 中文检索批处理与 CDP 会话稳定性 🆕
+
+- **新增 `scripts/batch_chinese_search.sh`**：交互式批量 CNKI/万方检索入口
+  - 同一条命令内完成 CDP Chrome 启动/复用、目标网站打开、CARSI 登录等待、批量检索和 `.bib` 输出
+  - 支持 `--login-only` 模式，专门用于 Step 5 下载前的登录门控
+  - 解决跨命令 `require_escalated` 场景下 CDP 会话断连的问题
+- `SKILL.md` 脚本索引与 Step 4/5 运行说明同步加入中文批量检索入口。
+
+### 运行时状态模板与跨平台清理
+
+- `references/decision_log.md`、`error_log.md`、`term_aliases.md` 移入 `references/templates/`
+- `SKILL.md` 新增运行时初始化规则：首次使用时复制模板到项目 `.skill-state/`，后续只修改 `.skill-state/` 副本
+- `.gitignore` 改为忽略整个 `.claude/` 目录，移除仓库内的 `.claude/settings.example.json`，避免本地 Agent 配置混入 skill 内容
+- 删除无用根目录 `image.png`，减少仓库噪声
+- 已知陷阱补充 Python 3.14 单行 `try/except` 语法限制、CDP WebSocket 层级、ScienceDirect 页面渲染等待等问题。
+
+### README 与运行时文档重整
+
+- README 更新为 `v1.0.9-20260609`，补充 Codex badge，并把 Claude Code / Codex / Hermes / OpenClaw 作为等价智能调度层展示
+- README 大幅压缩执行细节，明确 `README.md` 只做 GitHub 概览，`agents/step_*.md` 才是运行时规则 Source of Truth
+- Step 1-8 文档同步清理触发词、输入输出、质量门和故障处理，尤其强化 Step 6 的 6a/6b/6c/6d 分工
+- `agents/known_pitfalls.md` 扩展常见坑，便于后续 Agent 跨会话复用修复经验。
+
+### 修改文件
+
+| 文件 | 改动 |
+|------|------|
+| `scripts/build_zotero_plan.py` | 新增 Step 6 对照计划生成器；支持 BibTeX/中文元数据/PDF 附件池匹配 |
+| `scripts/organize_zotero.py` | 支持 Step 2 标准章节大纲和关键词清单解析，修正集合层级截取 |
+| `scripts/batch_chinese_search.sh` | 新增 CNKI/万方批量 CDP 检索与登录等待入口 |
+| `agents/step_6_zotero.md` | 重写 Step 6 为架构、对照、集合创建、入库/附件状态四段式流程 |
+| `SKILL.md` | 更新触发词、路由表、脚本索引、运行态模板复制规则和 Step 6 概览 |
+| `README.md` | 更新 v1.0.9 展示、版本历史、Step 6 能力、英文区版本号 |
+| `references/templates/*.md` | 将错误日志、决策日志、术语别名改为运行时模板 |
+| `.gitignore` | 忽略 `.claude/` 和运行时状态目录 |
+
+---
+
 ## v1.0.7 (2026-06-07)
 
 ### CDP 登录门控 — 文档规则 + 脚本机制双层防护 🆕

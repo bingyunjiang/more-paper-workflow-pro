@@ -52,6 +52,8 @@ HEADER_TAGS = {
     "关键词", "关键字", "标签", "术语", "说明", "章节",
     "keyword", "keywords", "tag", "tags", "term", "terms", "section",
 }
+META_SECTION_TITLES = {"论文标题", "检索语言", "关键词清单"}
+OUTLINE_SECTION_TITLES = {"章节大纲", "论文大纲", "大纲"}
 
 
 def _clean_title(value):
@@ -122,6 +124,7 @@ def generate_structure(keywords_text):
     current_path = []
     current_level = 0
     in_table = False
+    section = ""
 
     for line in keywords_text.split("\n"):
         stripped = line.strip()
@@ -136,8 +139,13 @@ def generate_structure(keywords_text):
 
             level = len(hm.group(1)) - 1   # ##→1, ###→2, ####→3
             title = hm.group(2).strip()
+            section = title
+            if title in META_SECTION_TITLES or title in OUTLINE_SECTION_TITLES:
+                in_table = False
+                continue
+
             # 按 level 裁剪 / 追加路径
-            current_path = current_path[:level]
+            current_path = current_path[:level - 1]
             current_path.append(title)
             current_level = level
 
@@ -148,6 +156,45 @@ def generate_structure(keywords_text):
             })
             in_table = False
             continue
+
+        # ── Step 2 标准格式：## 章节大纲 下的编号列表 ──
+        if section in OUTLINE_SECTION_TITLES:
+            om = re.match(r"^(\d+(?:\.\d+)*)[\.、]\s*(.+)$", stripped)
+            if om:
+                number = om.group(1)
+                title = om.group(2).strip()
+                depth = number.count(".") + 1
+                current_path = current_path[:depth - 1]
+                current_path.append(title)
+                chapters.append({
+                    "level": depth,
+                    "path": list(current_path),
+                    "rows": [],
+                    "number": number,
+                })
+                continue
+
+        # ── Step 2 标准格式：## 关键词清单 表格 ──
+        if section == "关键词清单" and stripped.startswith("|") and stripped.endswith("|"):
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            if cells and (cells[0].lower() in HEADER_TAGS or set(cells[0]) <= {"-", ":"}):
+                continue
+            if len(cells) >= 2 and chapters:
+                chapter_ref = cells[0]
+                tag = cells[1]
+                desc = cells[2] if len(cells) >= 3 else ""
+                if tag and tag.lower() not in HEADER_TAGS and not tag.startswith("-"):
+                    target = None
+                    for ch in chapters:
+                        if str(ch.get("number", "")) == chapter_ref:
+                            target = ch
+                            break
+                    if target is None:
+                        target = chapters[-1]
+                    rows = list(target.get("rows", []))
+                    rows.append((tag, desc))
+                    target["rows"] = rows
+                continue
 
         # ── 识别表格行: | tag | desc | ──
         # 要求以 | 开头且结尾，中间不含分隔线 (----)

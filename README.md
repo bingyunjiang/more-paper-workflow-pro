@@ -520,6 +520,15 @@ macOS 系统 `python3` 默认是 3.9。本工具所有脚本兼容 Python 3.9-3.
 
 完整版本历史请参见 [CHANGELOG.md](CHANGELOG.md)。以下为各版本要点：
 
+### v1.0.9-20260609 (2026-06-08 至 2026-06-09)
+- **Step 6 Zotero 文库管理升级**：新增 `scripts/build_zotero_plan.py`，先生成 `文献-Zotero架构对照.md/json` 与 `pdf-附件池索引.json`，再决定是否写入 Zotero
+- **中文文献入库补齐**：CNKI/万方条目使用 `source_id` + `article_url` + 中文元数据生成 CSL JSON，不再把合成 ID 当 DOI
+- **PDF 附件池策略**：Step 5 下载、原有 PDF、补下载和手动整理目录统一纳入附件池；默认先判断 `missing/found/already_attached/duplicate_candidate/conflict`，再给出安全动作建议
+- **中文检索批处理**：新增 `scripts/batch_chinese_search.sh`，同一命令内完成 CDP Chrome 启动、CARSI 登录等待、CNKI/万方批量检索和 `.bib` 导出，并支持 `--login-only`
+- **运行态模板隔离**：`decision_log.md` / `error_log.md` / `term_aliases.md` 移入 `references/templates/`，首次使用复制到项目 `.skill-state/`，避免直接改模板
+- **文档与仓库清理**：README 升级到 v1.0.9，补充 Codex 展示，明确 README 是概览、`agents/step_*.md` 是运行时规则；`.claude/` 改为本地配置忽略项
+- **解析修复**：`organize_zotero.py` 支持 Step 2 标准 `章节大纲` 编号列表和 `关键词清单` 表格，避免元信息标题误生成集合
+
 ### v1.0.7 (2026-06-07)
 - **CDP 登录门控**：Step 5 硬性规则（Agent 必须先 `--dry-run` → 等待用户确认登录 → 才能执行 CDP）+ `--require-login-confirm` 脚本门控参数
 - **中文文献下载路由**：新增 CNKI/Wanfang CDP 下载（Chinese CDP Round），通过文章详情页 URL 绕过无 DOI 问题
@@ -602,7 +611,7 @@ macOS 系统 `python3` 默认是 3.9。本工具所有脚本兼容 Python 3.9-3.
 ---
 
 <a id="english"></a>
-# 📚 more paper workflow pro skill `v1.0.7-20260607`
+# 📚 more paper workflow pro skill `v1.0.9-20260609`
 
 > **Author:** Dr. Jiang Bingyun　|　**WeChat:** Bingyunjiang　|　**Email:** bingyunjiang@qq.com
 
@@ -1105,6 +1114,15 @@ On macOS, the system `python3` defaults to 3.9. All scripts in this toolkit are 
 ## 📋 Version History
 
 Full version history is available in [CHANGELOG.md](CHANGELOG.md). Below are highlights:
+
+### v1.0.9-20260609 (2026-06-08 to 2026-06-09)
+- **Step 6 Zotero planning upgrade**: added `scripts/build_zotero_plan.py` to generate `文献-Zotero架构对照.md/json` and `pdf-附件池索引.json` before any Zotero write operation
+- **Chinese item import support**: CNKI/Wanfang records now use `source_id` + `article_url` + Chinese metadata to create CSL JSON items instead of treating synthetic IDs as DOI values
+- **PDF attachment pool strategy**: Step 5 downloads, existing PDFs, supplemental downloads, and manual folders are indexed together; the workflow first classifies `missing/found/already_attached/duplicate_candidate/conflict`, then recommends safe actions
+- **Chinese batch search helper**: added `scripts/batch_chinese_search.sh` for one-command CDP Chrome startup, CARSI login wait, CNKI/Wanfang batch search, `.bib` export, and `--login-only` login gating
+- **Runtime template isolation**: `decision_log.md`, `error_log.md`, and `term_aliases.md` moved into `references/templates/`; runtime copies live under project `.skill-state/`
+- **Docs and repository cleanup**: README now targets v1.0.9, adds Codex positioning, clarifies README as overview and `agents/step_*.md` as runtime source of truth, and treats `.claude/` as local-only config
+- **Parser fix**: `organize_zotero.py` now handles the standard Step 2 numbered `章节大纲` and `关键词清单` table without turning metadata headings into Zotero collections
 
 ### v1.0.7 (2026-06-07)
 - **CDP login gate**: Step 5 hard rule (agent must `--dry-run` → wait for user login confirmation → then execute CDP) + `--require-login-confirm` script-level gate
