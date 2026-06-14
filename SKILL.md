@@ -509,6 +509,20 @@ fi
 
 ## ⚙️ 依赖清单与配置提示
 
+### Public-first entry examples
+
+README 首屏现在固定给 3 条公共入口示例，分别对应：
+
+- `定题入口` -> Step 1
+- `直达下载入口` -> Step 5
+- `写作入口` -> Step 7
+
+这些示例只用于帮助第一次看到仓库的人快速理解“从哪里开始”，不是新的运行规则，也不改变 direct-entry / checkpoint 语义。实际执行时：
+
+- 入口识别仍以当前触发词和 `route_mode` 为准
+- Direct-entry contract 仍由对应 `agents/step_*.md` 决定
+- README 首屏属于 GitHub 对外展示层；运行态真相仍以本 `SKILL.md` 和 `agents/*.md` 为准
+
 > **一键安装：** `pip install -r requirements.txt`
 > 详细说明见 [`requirements.txt`](requirements.txt) — 必选依赖已解注，可选依赖按需安装。
 

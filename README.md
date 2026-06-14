@@ -4,68 +4,175 @@
 [![OpenClaw](https://img.shields.io/badge/OpenClaw-Skill-00B4D8?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0tMSAxNy45M2MtMy45NS0uNDktNy0zLjg1LTctNy45MyAwLS40NC4wNC0uODcuMTEtMS4yOWwxLjg4IDEuODhjLjEuMTEuMjYuMjYuNDcuNDQgMi4yMiAxLjk3IDMuMjYgMi44NyAzLjI2IDIuODcuMjYgMCAuNTItLjEzLjc4LS4zOSAxLjI2LTEuMjYgMS4xMi0zLjI5LS4zMy00Ljg2bC0xLjg5LTEuODljLS4yMi0uMjItLjMzLS4zMy0uNDQtLjQ0LS40Ny0uNDctLjQ3LTEuMjQgMC0xLjcxLjQ3LS40NyAxLjI0LS40NyAxLjcxIDBsLjQ0LjQ0Yy4wMi4wMi4wNC4wNCAxLjQyIDEuNDJsLjIyLS4wNGMxLjY4LS4zMSAzLjI0LjQ2IDMuOTcgMi4wMi0xLjU5IDEuMTktMy4yOSAxLjg5LTQuOTcgMi4wOHoiLz48L3N2Zz4=)](https://github.com/openclaw/openclaw)
 [![Platform](https://img.shields.io/badge/macOS_|_Windows_|_Linux-lightgrey?logo=apple)]()
 [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey?logo=creativecommons&logoColor=white)](LICENSE)
-[![科研工具](https://img.shields.io/badge/科研工具-8B5CF6)]()
-[![研究定题](https://img.shields.io/badge/研究定题-06B6D4)]()
-[![文献检索](https://img.shields.io/badge/文献检索-10B981)]()
-[![文献下载](https://img.shields.io/badge/文献下载-F59E0B)]()
-[![学术写作](https://img.shields.io/badge/学术写作-6366F1)]()
-[![论文助手](https://img.shields.io/badge/论文助手-EC4899)]()
 [![Zotero](https://img.shields.io/badge/Zotero-CC2936?logo=zotero&logoColor=white)]()
-[![Academic Tool](https://img.shields.io/badge/Academic_Tool-8B5CF6)]()
-[![Topic Definition](https://img.shields.io/badge/Topic_Definition-06B6D4)]()
-[![Literature Search](https://img.shields.io/badge/Literature_Search-10B981)]()
-[![PDF Download](https://img.shields.io/badge/PDF_Download-F59E0B)]()
-[![Academic Writing](https://img.shields.io/badge/Academic_Writing-6366F1)]()
-[![Paper Assistant](https://img.shields.io/badge/Paper_Assistant-EC4899)]()
 
 > **作者：** Dr. Jiang Bingyun　|　**微信：** Bingyunjiang　|　**邮箱：** bingyunjiang@qq.com
 
-[**中文**](#chinese) &nbsp;|&nbsp; [**English**](#english)
+[**中文**](#chinese) &nbsp;|&nbsp; [**English Summary**](#english-summary) &nbsp;|&nbsp; [**Full English**](#english)
 
 <a id="chinese"></a>
 # 📚 more paper workflow pro skill `v1.0.11-20260613-1`
+
+> 面向中文/双语论文写作的证据闭环学术工作流：从定题、检索、下载、Zotero 到写作与引用审计，全程基于真实文献，而不是模型记忆。
 
 ## 📑 目录
 
 - [为什么需要这个工具](#为什么需要这个工具)
 - [🎯 适合谁？不适合谁？](#适合谁不适合谁)
-- [📖 简介](#简介)
-- [✨ 功能特性](#功能特性)
-- [🏆 核心优势](#核心优势)
-- [🛡️ 论文质量防线](#论文质量防线)
-- [📋 工作流一览](#工作流一览)
-- [🚀 安装仅是参考](#安装仅是参考)
-- [📖 使用指南](#使用指南)
-- [📂 项目结构](#项目结构)
-- [❓ 常见问题](#常见问题)
-- [📋 版本历史](#版本历史)
-- [👥 贡献者](#贡献者)
-- [📄 许可](#许可)
-- [🔗 相关链接](#相关链接)
+- [⚡ Quick Start / 装完第一句话](#-quick-start--装完第一句话)
+- [📦 你会得到什么产物](#-你会得到什么产物)
+- [🧭 为什么和普通 AI 写论文工具不一样](#-为什么和普通-ai-写论文工具不一样)
+- [🛑 不会做什么 / 何时停手问你](#-不会做什么--何时停手问你)
+- [📋 工作流一览](#-工作流一览)
+- [🚀 安装仅是参考](#-安装仅是参考)
+- [📖 使用指南](#-使用指南)
+- [✨ 功能特性](#-功能特性)
+- [🏆 核心优势](#-核心优势)
+- [🛡️ 论文质量防线](#-论文质量防线)
+- [📂 项目结构](#-项目结构)
+- [❓ 常见问题](#-常见问题)
+- [📋 版本历史](#-版本历史)
+- [📄 许可](#-许可)
+- [🙏 致谢](#-致谢)
+- [🔗 相关链接](#-相关链接)
 
 ### 为什么需要这个工具
 
-为什么你的 AI 写论文总在编造参考文献？因为大多数 AI 学术工具把「写论文」当成「生成文本」——至于引用的文献存不存在、论证有没有依据，它们不关心。**好的 AI 工具不应该替代研究者的判断**，而应该让检索更系统、让筛选有评分依据、让写作基于真实论文内容。
+为什么你的 AI 写论文总在编造参考文献？因为大多数 AI 学术工具把「写论文」当成「生成文本」: 至于引用的文献存不存在、论证有没有依据，它们并不关心。
 
-本工具不做「一键生成论文」，而是按传统科研 8 步流程，一步步辅助你走完。每一步产出可见文件，每条参考文献来自你真实拥有的 PDF。
+**More Paper Workflow Pro Skill** 的目标不是一键替你写论文，而是把学术写作拆成 8 个可见、可中断、可回溯的步骤，让检索、下载、Zotero、写作和引用审计围绕真实文献闭环运作。
 
 ![中文海报](posters/skill-overview-poster.png)
 
 ## 🎯 适合谁？不适合谁？
 
-### ✅ 如果你是这样的研究者，你会很喜欢它：
+### ✅ 适合你，如果你：
 
-- 被 AI 编造参考文献坑过，对「一键生成论文」有阴影
-- 希望用 AI 提效，但不是让 AI 替你做决定，你要始终掌握控制权
-- 正在写综述、毕业论文或课题申报书，需要系统管理 50~200+ 篇参考文献
-- 有 Elsevier 或 IEEE 的机构访问权限（学校 VPN 即可）
-- 已经在用 Zotero，但手动整理文献库太累
+- 被 AI 编造参考文献坑过，想把“真实性”放在第一位
+- 想用 AI 提效，但不想把研究判断权交给 AI
+- 正在写综述、毕业论文、课程论文或课题申报书
+- 已有或准备建立 Zotero 文库，希望把 PDF、条目和章节结构对齐
+- 愿意按步骤推进，而不是追求“3 分钟自动出整篇论文”
 
-### ❌ 但如果属于下面情况，它可能不太适合你：
+### ❌ 不太适合你，如果你：
 
-- 「输入标题，3 分钟出一篇论文」是你的核心需求——这个工具刻意不做这种事
+- 只想要“一键生成完整可信论文”
+- 不接受任何人工确认节点
+- 完全不关心引用是否真实、证据是否能追溯
 
----
+## ⚡ Quick Start / 装完第一句话
+
+README 首屏只给 3 个最短入口。运行规则和失败回退仍以 [`SKILL.md`](SKILL.md) 与 [`agents/`](agents/) 为准。
+
+### 1. 定题入口
+
+```text
+我想研究“航空发动机滑油系统中 HFO 工质替代”的方向。请按 more-paper workflow 先帮我做 Step 1，给我一份研究主题澄清结果，并说明下一步该怎么进入 Step 2。
+```
+
+- 适合：还没有最终题目，但已有研究方向
+- 触发：Step 1
+- 立刻会产出：`研究主题.md` 风格结果
+- 样例：[`examples/first-run/step1-topic-sample.md`](examples/first-run/step1-topic-sample.md)
+
+### 2. 直达下载入口
+
+```text
+请直接进入 Step 5。根据这 3 个 DOI 生成下载清单并说明下载路由，不要回跑前面的检索步骤：10.1016/j.ijheatmasstransfer.2024.125012; 10.1109/ACCESS.2024.3399912; 10.1016/j.applthermaleng.2024.123456
+```
+
+- 适合：已经有 DOI、BibTeX、标题清单或参考文献列表
+- 触发：Step 5
+- 立刻会产出：`download_manifest.json` / 路由预览 / 未解析条目清单
+- 样例：[`examples/first-run/step5-download-summary.md`](examples/first-run/step5-download-summary.md)
+
+### 3. 写作入口
+
+```text
+我已经有 Zotero 文库、PDF 附件和一份章节草稿。请直接进入 Step 7，先为“2.3 HFO 工质替代的研究现状”生成章节写作蓝图，并告诉我需要补哪些证据。
+```
+
+- 适合：已经有 Zotero / PDF / 草稿，不想从 Step 1 重跑
+- 触发：Step 7
+- 立刻会产出：章节蓝图、证据缺口或指定章节草稿
+- 样例：[`examples/first-run/step7-writing-sample.md`](examples/first-run/step7-writing-sample.md)
+
+更多最小样例见 [`examples/first-run/README.md`](examples/first-run/README.md)。可复现文本演示见 [`examples/demo/demo-script.md`](examples/demo/demo-script.md)。
+
+## 📦 你会得到什么产物
+
+这个 skill 不只给“回答”，而是给文件化中间产物，方便你继续检索、下载、审阅和写作。
+
+- Step 1: `研究主题.md`
+- Step 4: `检索文献表.md/.xlsx/.pdf` + `文献库.bib`
+- Step 5: `download_manifest.json` / `unresolved_download_items.md` / PDF 附件池
+- Step 6: `文献-Zotero架构对照.md/json`
+- Step 7: `section_blueprints.md/json`、`writing_rationale_matrix.md/json`、章节草稿或全文草稿
+- Step 7.11: `citation_audit_sample.md` 风格的引用审计结果
+- Step 8: `论文润色稿.md` 与质量报告
+
+推荐先看这 3 个对外最短样例：
+
+- [`examples/first-run/step1-topic-sample.md`](examples/first-run/step1-topic-sample.md)
+- [`examples/first-run/step5-download-summary.md`](examples/first-run/step5-download-summary.md)
+- [`examples/first-run/step7-writing-sample.md`](examples/first-run/step7-writing-sample.md)
+
+完整展示层见 [`examples/showcase/README.md`](examples/showcase/README.md)。
+
+## 🧭 为什么和普通 AI 写论文工具不一样
+
+| 维度 | 普通 AI 写论文工具 | More Paper Workflow |
+|------|--------------------|---------------------|
+| 写作方式 | 主题 -> 直接生成正文 | 8 步透明流程，每步可见可中断 |
+| 参考文献 | 模型记忆或模糊检索 | 围绕真实 PDF、BibTeX、Zotero 运作 |
+| 下载问题 | 通常不处理 | Step 5 专门处理统一下载路由 |
+| 文库管理 | 通常没有 | Step 6 把大纲、BibTeX、PDF、Zotero 对齐 |
+| 写后验证 | 很少做 | Step 7.11 引用审计，Step 8 只做该做的润色 |
+| 用户控制 | 生成后审阅 | 高风险写入前明确停手确认 |
+
+## 🛑 不会做什么 / 何时停手问你
+
+这个 skill 的严谨性来自“会停手”，而不是“什么都自动做”。
+
+- 不承诺一键生成可信论文
+- 不会把未核验引用直接写进成稿关键结论
+- 不会在 Step 6 静默默认 `cloud` 模式
+- 不会因为缺少前序步骤就强迫你线性回跑；如果你已有等价输入，会按 direct-entry 合同进入当前步骤
+- 不会在需要登录态、外部写入或高风险动作时假装已经完成
+- 不会把 README 当运行时真相；真正执行边界以 [`SKILL.md`](SKILL.md) 和 [`agents/step_*.md`](agents/) 为准
+
+## 📋 工作流一览
+
+```
+Step 1: 交互式确定研究主题（v2.0 增强版）          → 研究主题.md
+Step 2: 生成论文大纲与关键词（含大纲评审+术语映射）  → 大纲关键词.md
+Step 3: 生成文献检索方案（T1→T2→T3 分级路由）      → 检索方案.md
+Step 4: 多渠道检索+评分筛选（4a引文验证→4h完成）    → 检索文献表.md / .xlsx / .pdf / .bib
+Step 5: 统一下载路由（Sci-Hub→SD CDP→Generic CDP） → paper-temp/ PDFs
+Step 6: Zotero 文库管理（架构+BibTeX条目+PDF附件一致性） → zotero-架构.md + 文献-Zotero架构对照.md/json + pdf-附件池索引.json + Zotero
+Step 7: 论文写作（文献证据矩阵+目标体裁/文档风格+图表+引用审计） → 文献证据矩阵.csv + 论文初稿或指定章节.md/.docx
+Step 8: 论文润色（句长波动检测+四合一精修引擎）      → 论文润色稿.md
+```
+
+## 🚀 安装仅是参考
+
+### 推荐公共安装方式
+
+当前最稳妥的公共使用方式，是把仓库地址交给支持 Skill 的对话式运行时，由它读取 `README.md`、`SKILL.md` 和 `agents/*.md` 后按需执行：
+
+- `https://github.com/bingyunjiang/more-paper-workflow-pro-skill`
+
+### 本仓库参考安装
+
+本仓库保留参考安装说明，原因是不同运行时（Claude Code / Codex / Hermes / OpenClaw）的安装入口并不完全统一。短期内这里不强行承诺单一 `npx skills add ...` 命令，以免给出会失效的公共入口。
+
+装好后，判断自己是否成功的最简单方式不是“看有没有报错”，而是直接复制上面的 3 条入口 prompt 之一，看它能否识别到对应 Step 和预期产物。
+
+### 许可与分发说明
+
+- 仓库内许可证见 [LICENSE](LICENSE)
+- Marketplace 元数据已放在 [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json)
+- GitHub 仓库描述、topics、release 说明等平台元数据属于发布动作，需要在仓库托管平台上同步维护
 
 ## 📖 简介
 
@@ -704,6 +811,12 @@ macOS 系统 `python3` 默认是 3.9。本工具所有脚本兼容 Python 3.9-3.
 
 > ⚠️ **注意：** 本仓库为公开参考实现。直接 fork 并移除版权声明构成侵权。
 > 商业授权需求请联系：bingyunjiang@qq.com
+
+## 🙏 致谢
+
+- [54yyyu/zotero-mcp](https://github.com/54yyyu/zotero-mcp) — 本项目集成的 Zotero MCP 基础实现
+- [Zotero](https://www.zotero.org/) — 文献管理与本地知识组织基础设施
+- Claude Code / Codex / Hermes / OpenClaw — 作为对话式 orchestration runtime 的主要承载环境
 
 ## 🔗 相关链接
 
