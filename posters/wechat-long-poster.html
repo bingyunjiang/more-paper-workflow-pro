@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>More Paper Workflow Pro Skill - WeChat Long Poster</title>
+  <style>
+    :root {
+      --bg: #f4f0e8;
+      --ink: #1c2430;
+      --muted: #5f6b7a;
+      --line: rgba(28, 36, 48, 0.12);
+      --card: rgba(255, 255, 255, 0.82);
+      --card-strong: rgba(255, 255, 255, 0.92);
+      --navy: #15233d;
+      --navy-2: #1d3154;
+      --gold: #c8922c;
+      --gold-soft: #efe0bf;
+      --blue: #365f99;
+      --sage: #5f7f71;
+      --rose: #9c5a61;
+      --shadow: 0 24px 80px rgba(19, 28, 42, 0.14);
+      --radius-xl: 36px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --poster-width: 820px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background:
+        radial-gradient(circle at top left, rgba(201, 146, 44, 0.16), transparent 24%),
+        radial-gradient(circle at top right, rgba(54, 95, 153, 0.14), transparent 28%),
+        linear-gradient(180deg, #f6f2ea 0%, #efe8db 52%, #f5f1e8 100%);
+      color: var(--ink);
+      font-family: "Avenir Next", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      padding: 28px 0 48px;
+    }
+
+    .poster {
+      width: min(calc(100vw - 32px), var(--poster-width));
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .poster::before,
+    .poster::after {
+      content: "";
+      position: fixed;
+      z-index: 0;
+      border-radius: 999px;
+      filter: blur(14px);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .poster::before {
+      width: 220px;
+      height: 220px;
+      top: 120px;
+      left: 40px;
+      background: rgba(201, 146, 44, 0.14);
+    }
+
+    .poster::after {
+      width: 180px;
+      height: 180px;
+      top: 340px;
+      right: 28px;
+      background: rgba(54, 95, 153, 0.12);
+    }
+
+    .screen {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 22px;
+      padding: 34px 34px 36px;
+      border-radius: var(--radius-xl);
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+
+    .screen.hero {
+      padding: 0;
+      background: linear-gradient(155deg, #15233d 0%, #1b2d4d 42%, #29466e 100%);
+      color: #f7f2ea;
+    }
+
+    .hero-inner {
+      padding: 42px 36px 44px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-inner::before {
+      content: "";
+      position: absolute;
+      inset: auto -30px -40px auto;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(201, 146, 44, 0.34) 0%, rgba(201, 146, 44, 0) 70%);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(247, 242, 234, 0.78);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    .hero-title {
+      margin-top: 22px;
+      font-size: 54px;
+      line-height: 1.03;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      max-width: 620px;
+    }
+
+    .hero-subtitle {
+      margin-top: 18px;
+      font-size: 28px;
+      line-height: 1.34;
+      font-weight: 600;
+      max-width: 660px;
+      color: #f3dfb8;
+    }
+
+    .hero-copy {
+      margin-top: 20px;
+      max-width: 650px;
+      font-size: 18px;
+      line-height: 1.7;
+      color: rgba(247, 242, 234, 0.82);
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .chip {
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #14213c;
+      background: linear-gradient(180deg, #f6e5bf 0%, #e3c985 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    }
+
+    .section-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue);
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 36px;
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+      max-width: 690px;
+    }
+
+    .section-intro {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.72;
+      max-width: 690px;
+    }
+
+    .section-callout {
+      margin-top: 20px;
+      padding: 18px 20px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, rgba(201, 146, 44, 0.12), rgba(255, 255, 255, 0.72));
+      border: 1px solid rgba(201, 146, 44, 0.18);
+      font-size: 18px;
+      line-height: 1.7;
+      font-weight: 700;
+    }
+
+    .pain-grid,
+    .triad-grid,
+    .route-grid,
+    .mode-grid,
+    .genre-grid,
+    .scope-grid,
+    .artifact-grid,
+    .steps-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .pain-grid,
+    .triad-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .steps-grid,
+    .genre-grid,
+    .artifact-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .route-grid,
+    .mode-grid,
+    .scope-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card {
+      padding: 18px 18px 20px;
+      border-radius: var(--radius-lg);
+      background: var(--card-strong);
+      border: 1px solid var(--line);
+    }
+
+    .card.soft-blue {
+      background: linear-gradient(180deg, rgba(54, 95, 153, 0.1), rgba(255, 255, 255, 0.92));
+    }
+
+    .card.soft-gold {
+      background: linear-gradient(180deg, rgba(201, 146, 44, 0.12), rgba(255, 255, 255, 0.92));
+    }
+
+    .card.soft-sage {
+      background: linear-gradient(180deg, rgba(95, 127, 113, 0.12), rgba(255, 255, 255, 0.92));
+    }
+
+    .card-index {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 22px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .card-copy {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.72;
+    }
+
+    .bullet-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .bullet {
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 12px;
+      align-items: start;
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.72;
+    }
+
+    .dot {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      background: var(--blue);
+      margin-top: 2px;
+    }
+
+    .step-item,
+    .artifact-item,
+    .mode-item,
+    .scope-item,
+    .route-item,
+    .genre-item {
+      padding: 16px 16px 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--line);
+    }
+
+    .step-item strong,
+    .route-item strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+
+    .step-item span,
+    .artifact-item span,
+    .mode-item span,
+    .scope-item span,
+    .route-item span,
+    .genre-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .route-item {
+      position: relative;
+      padding-right: 70px;
+    }
+
+    .route-arrow {
+      position: absolute;
+      top: 50%;
+      right: 18px;
+      transform: translateY(-50%);
+      font-size: 18px;
+      color: var(--gold);
+      font-weight: 800;
+    }
+
+    .code-tag {
+      font-family: "SFMono-Regular", "Menlo", monospace;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(21, 35, 61, 0.08);
+      color: var(--navy);
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .artifact-grid .artifact-item,
+    .genre-grid .genre-item,
+    .mode-grid .mode-item,
+    .scope-grid .scope-item {
+      min-height: 106px;
+    }
+
+    .pill-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(21, 35, 61, 0.06);
+      border: 1px solid rgba(21, 35, 61, 0.08);
+      font-family: "SFMono-Regular", "Menlo", monospace;
+      font-size: 13px;
+      color: var(--navy);
+      font-weight: 700;
+    }
+
+    .quote-block {
+      margin-top: 22px;
+      padding: 22px 22px 22px 20px;
+      border-left: 4px solid var(--gold);
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 0 18px 18px 0;
+      font-size: 20px;
+      line-height: 1.7;
+      font-weight: 700;
+    }
+
+    .footer-screen {
+      background: linear-gradient(160deg, #15233d 0%, #213861 100%);
+      color: #f7f2ea;
+      text-align: center;
+      padding-top: 40px;
+      padding-bottom: 42px;
+    }
+
+    .footer-screen .section-kicker {
+      justify-content: center;
+      color: rgba(243, 223, 184, 0.84);
+    }
+
+    .footer-screen .section-title {
+      margin-left: auto;
+      margin-right: auto;
+      color: #fff8eb;
+      max-width: 620px;
+    }
+
+    .footer-screen .section-intro {
+      margin-left: auto;
+      margin-right: auto;
+      color: rgba(247, 242, 234, 0.76);
+      max-width: 620px;
+    }
+
+    .footer-badge {
+      margin-top: 24px;
+      display: inline-block;
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #f3dfb8, #ddc07f);
+      color: #14213c;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 16px 0 28px;
+      }
+
+      .poster {
+        width: min(calc(100vw - 20px), var(--poster-width));
+      }
+
+      .screen,
+      .hero-inner {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .screen {
+        padding-top: 24px;
+        padding-bottom: 24px;
+        border-radius: 26px;
+      }
+
+      .hero-title {
+        font-size: 36px;
+      }
+
+      .hero-subtitle {
+        font-size: 22px;
+      }
+
+      .section-title {
+        font-size: 28px;
+      }
+
+      .steps-grid,
+      .genre-grid,
+      .artifact-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <section class="screen hero">
+      <div class="hero-inner">
+        <div class="eyebrow">Academic Workflow · Dynamic Routing</div>
+        <h1 class="hero-title">More Paper Workflow Pro Skill</h1>
+        <p class="hero-subtitle">AI 赋能科研，帮你在真实研究状态里高效前进</p>
+        <p class="hero-copy">
+          不是线性 8 步论文助手，而是一套可直达、可回跳、可审计的学术工作流系统。
+          它围绕真实研究现场设计，让流程服务研究推进，而不是反过来绑架研究。
+        </p>
+        <div class="chip-row">
+          <span class="chip">可直达</span>
+          <span class="chip">可回跳</span>
+          <span class="chip">可审计</span>
+          <span class="chip">材料驱动</span>
+          <span class="chip">风险可见</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 2 · Pain Points</div>
+      <h2 class="section-title">论文流程最大的问题，不是步骤不够多，而是默认你必须从头开始。</h2>
+      <div class="pain-grid">
+        <article class="card soft-gold">
+          <div class="card-index">Case 01</div>
+          <h3 class="card-title">明明已经有了大纲，却还要被迫重新做选题。</h3>
+          <p class="card-copy">已有研究边界被重复确认，时间浪费在不必要的回退上。</p>
+        </article>
+        <article class="card soft-blue">
+          <div class="card-index">Case 02</div>
+          <h3 class="card-title">明明已经有了 BibTeX、PDF、Zotero 文库，却还要从头重跑流程。</h3>
+          <p class="card-copy">已有材料没有被识别，系统只会沿着预设顺序推进。</p>
+        </article>
+        <article class="card soft-sage">
+          <div class="card-index">Case 03</div>
+          <h3 class="card-title">明明只想续写一章、润色一节，系统却总想接管整篇论文。</h3>
+          <p class="card-copy">任务粒度不匹配，研究者只想推进局部，工作流却强行全局展开。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 3 · Core Claim</div>
+      <h2 class="section-title">它不是把论文拆成 8 步，而是把线性流程改造成动态路由。</h2>
+      <p class="section-intro">
+        这套 skill 不先问“你现在应该跑到第几步”，而是先判断你手上已经具备什么材料、
+        这些材料来自哪一步、它们足以支撑你走到哪里，以及哪里必须补充证据或提示风险。
+      </p>
+      <div class="bullet-list">
+        <div class="bullet"><span class="dot">1</span><span>你手上已经有什么材料</span></div>
+        <div class="bullet"><span class="dot">2</span><span>这些材料来自哪一步</span></div>
+        <div class="bullet"><span class="dot">3</span><span>它们能支撑你进入哪一步</span></div>
+        <div class="bullet"><span class="dot">4</span><span>哪里可以继续推进</span></div>
+        <div class="bullet"><span class="dot">5</span><span>哪里必须提示风险</span></div>
+      </div>
+      <div class="section-callout">不是强迫你从头开始，而是识别你现在最适合从哪里开始。</div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 4 · 8-Step Map</div>
+      <h2 class="section-title">表面上，它依然覆盖完整 8 步，但这 8 步是能力地图，不是流水线。</h2>
+      <div class="steps-grid">
+        <div class="step-item"><strong>Step 1</strong><span>研究主题澄清</span></div>
+        <div class="step-item"><strong>Step 2</strong><span>大纲与关键词生成</span></div>
+        <div class="step-item"><strong>Step 3</strong><span>结构化检索方案</span></div>
+        <div class="step-item"><strong>Step 4</strong><span>多源检索、筛选与评分</span></div>
+        <div class="step-item"><strong>Step 5</strong><span>PDF 下载路由与批量下载</span></div>
+        <div class="step-item"><strong>Step 6</strong><span>Zotero 文库整理与映射</span></div>
+        <div class="step-item"><strong>Step 7</strong><span>写作与写作前证据组织</span></div>
+        <div class="step-item"><strong>Step 8</strong><span>润色与保守修订</span></div>
+      </div>
+      <div class="quote-block">完整覆盖不等于线性锁死。它能全流程工作，也允许任一步直接进入。</div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 5 · Core Architecture</div>
+      <h2 class="section-title">真正驱动它的，不是步骤编号，而是三层底层结构。</h2>
+      <div class="triad-grid">
+        <article class="card soft-blue">
+          <div class="card-index">Layer 01</div>
+          <h3 class="card-title">Step Contract</h3>
+          <p class="card-copy">定义每一步的输入、输出、完成条件和交接边界。</p>
+        </article>
+        <article class="card soft-gold">
+          <div class="card-index">Layer 02</div>
+          <h3 class="card-title">Artifact Passport</h3>
+          <p class="card-copy">识别你已经具备的材料，再决定推荐进入哪一步。</p>
+        </article>
+        <article class="card soft-sage">
+          <div class="card-index">Layer 03</div>
+          <h3 class="card-title">Risk Boundary</h3>
+          <p class="card-copy">能直接进入就直接进入，证据不足就标风险，只有真正高风险时才阻断。</p>
+        </article>
+      </div>
+      <div class="section-callout">它不是流程控制器，而是一套材料识别、状态判断和风险可视化系统。</div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 6 · Artifact Passport</div>
+      <h2 class="section-title">Artifact Passport，是这套系统的材料护照。</h2>
+      <p class="section-intro">
+        它不保存正文内容，只记录你当前有哪些材料、这些材料分别属于哪个步骤，以及它们足以支撑你进入哪些后续步骤。
+      </p>
+      <div class="artifact-grid">
+        <div class="artifact-item"><span class="code-tag">topic</span><span>研究主题</span></div>
+        <div class="artifact-item"><span class="code-tag">outline</span><span>大纲与结构</span></div>
+        <div class="artifact-item"><span class="code-tag">search_plan</span><span>检索方案</span></div>
+        <div class="artifact-item"><span class="code-tag">workflow_search_results</span><span>检索结果清单</span></div>
+        <div class="artifact-item"><span class="code-tag">bibliography</span><span>文献库 / BibTeX</span></div>
+        <div class="artifact-item"><span class="code-tag">pdf / pdf_pool</span><span>PDF 文件或附件池</span></div>
+        <div class="artifact-item"><span class="code-tag">zotero_mapping</span><span>Zotero 对照与映射</span></div>
+        <div class="artifact-item"><span class="code-tag">pdf_index</span><span>PDF 索引</span></div>
+        <div class="artifact-item"><span class="code-tag">draft</span><span>已有正文草稿</span></div>
+        <div class="artifact-item"><span class="code-tag">citation_audit</span><span>引用审计结果</span></div>
+      </div>
+      <div class="quote-block">它关心的不是你走到第几步，而是你现在手里到底有什么。</div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 7 · Dynamic Routing</div>
+      <h2 class="section-title">下一步不是按编号决定，而是按材料成熟度决定。</h2>
+      <div class="route-grid">
+        <div class="route-item">
+          <strong>有 <code>draft</code> 或 <code>polishing</code></strong>
+          <span>优先进入 Step 8，直接处理已有成稿的润色或续修。</span>
+          <span class="route-arrow">→ Step 8</span>
+        </div>
+        <div class="route-item">
+          <strong>有 <code>zotero_mapping</code>、<code>pdf_index</code>、<code>citation_audit</code></strong>
+          <span>优先进入 Step 7，进入写作、续写或定向修订。</span>
+          <span class="route-arrow">→ Step 7</span>
+        </div>
+        <div class="route-item">
+          <strong>有 <code>bibliography</code>、<code>pdf_pool</code>、<code>pdf</code></strong>
+          <span>优先进入 Step 6，完成文库整理、附件映射和覆盖梳理。</span>
+          <span class="route-arrow">→ Step 6</span>
+        </div>
+        <div class="route-item">
+          <strong>有 <code>workflow_search_results</code>、<code>download_manifest</code></strong>
+          <span>优先进入 Step 5，继续下载、补附件或做路由检查。</span>
+          <span class="route-arrow">→ Step 5</span>
+        </div>
+        <div class="route-item">
+          <strong>有 <code>search_plan</code>、<code>outline</code></strong>
+          <span>优先进入 Step 4，开始结构化检索、评分与筛选。</span>
+          <span class="route-arrow">→ Step 4</span>
+        </div>
+        <div class="route-item">
+          <strong>什么都没有</strong>
+          <span>才回到 Step 1，从研究主题澄清开始。</span>
+          <span class="route-arrow">→ Step 1</span>
+        </div>
+      </div>
+      <div class="section-callout">真实研究从来不是整齐开始的，而是中途接入、反复回跳、边做边补。</div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 8 · Step 7 Writing Router</div>
+      <h2 class="section-title">Step 7 不是一个“开始写论文”按钮，而是写作任务的分流入口。</h2>
+      <p class="section-intro">
+        它根据任务类型、草稿状态、证据基础和目标体裁切换写作模式，避免把所有写作请求都粗暴地视为“全文代写”。
+      </p>
+      <div class="mode-grid">
+        <div class="mode-item"><span class="code-tag">full-document</span><span>全文写作</span></div>
+        <div class="mode-item"><span class="code-tag">chapter-only</span><span>章节写作</span></div>
+        <div class="mode-item"><span class="code-tag">continue-existing</span><span>基于已有草稿续写</span></div>
+        <div class="mode-item"><span class="code-tag">abstract-only</span><span>只写摘要</span></div>
+        <div class="mode-item"><span class="code-tag">review-only</span><span>文献综述</span></div>
+        <div class="mode-item"><span class="code-tag">revision-only</span><span>基于审稿意见定向修订</span></div>
+      </div>
+      <div class="genre-grid">
+        <div class="genre-item"><span class="code-tag">thesis</span><span>学位论文</span></div>
+        <div class="genre-item"><span class="code-tag">journal</span><span>期刊论文</span></div>
+        <div class="genre-item"><span class="code-tag">review</span><span>综述</span></div>
+        <div class="genre-item"><span class="code-tag">report</span><span>报告</span></div>
+        <div class="genre-item"><span class="code-tag">proposal</span><span>开题 / 方案</span></div>
+        <div class="genre-item"><span class="code-tag">conference</span><span>会议论文</span></div>
+      </div>
+      <div class="quote-block">它不是盲目代写，而是根据草稿状态、证据基础和目标体裁决定怎么写。</div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 9 · Step 8 Conservative Revision</div>
+      <h2 class="section-title">Step 8 负责精修，但不冒充重写，也不替代证据审计。</h2>
+      <div class="scope-grid">
+        <div class="scope-item"><span class="code-tag">local-polish</span><span>局部润色</span></div>
+        <div class="scope-item"><span class="code-tag">section-revision</span><span>章节修订</span></div>
+        <div class="scope-item"><span class="code-tag">full-manuscript-pass</span><span>全稿一轮保守精修</span></div>
+      </div>
+      <div class="bullet-list">
+        <div class="bullet"><span class="dot">A</span><span>保留了哪些原结构</span></div>
+        <div class="bullet"><span class="dot">B</span><span>哪些修改属于直接修订</span></div>
+        <div class="bullet"><span class="dot">C</span><span>哪些修改属于局部补写</span></div>
+        <div class="bullet"><span class="dot">D</span><span>哪些问题必须回到 Step 7 解决</span></div>
+        <div class="bullet"><span class="dot">E</span><span>是否形成完整的修订记录与验证台账</span></div>
+      </div>
+      <div class="section-callout">它负责精修，但不接管主体写作，也不假装已经完成引用确认。</div>
+    </section>
+
+    <section class="screen">
+      <div class="section-kicker">Screen 10 · Methodology</div>
+      <h2 class="section-title">这不是一个从 1 做到 8 的论文助手，而更像一个研究操作系统。</h2>
+      <p class="section-intro">
+        它识别你已有的材料，判断你能从哪里进入，告诉你哪里可以继续推进，也明确哪里不能假装已经完成。
+        它把论文工作流，从“顺序执行”变成“材料驱动、证据驱动、风险可审计”的动态系统。
+      </p>
+      <div class="pill-cloud">
+        <span class="pill">Material-Driven</span>
+        <span class="pill">Evidence-Aware</span>
+        <span class="pill">Risk-Visible</span>
+        <span class="pill">Direct Entry</span>
+        <span class="pill">Audit-Friendly</span>
+      </div>
+    </section>
+
+    <section class="screen footer-screen">
+      <div class="section-kicker">Final Message</div>
+      <h2 class="section-title">AI 赋能科研，帮你在真实研究状态里高效前进</h2>
+      <p class="section-intro">
+        不是替你机械跑流程，而是让流程服务真实研究推进。<br />
+        More Paper Workflow Pro Skill
+      </p>
+      <div class="footer-badge">Ready for Full-Page Screenshot Export</div>
+    </section>
+  </main>
+</body>
+</html>

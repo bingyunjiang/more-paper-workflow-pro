@@ -75,6 +75,18 @@ def read_json(path: str | None, warnings: list[str]) -> Any:
         return None
 
 
+def load_prepared_pdf_artifacts(path: str | None, warnings: list[str]) -> list[dict[str, Any]]:
+    data = read_json(path, warnings)
+    if data is None:
+        return []
+    if isinstance(data, dict) and isinstance(data.get("artifacts"), list):
+        return [item for item in data["artifacts"] if isinstance(item, dict)]
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    warnings.append(f"Prepared PDF artifacts has unsupported format: {path}")
+    return []
+
+
 def split_bib_entries(text: str) -> list[tuple[str, str, str]]:
     entries = []
     i = 0
@@ -444,6 +456,23 @@ def match_pdfs(record: dict[str, Any], pdfs: list[dict[str, Any]]) -> tuple[str,
     return top["path"], "manual", candidates, "found", "manual_drag"
 
 
+def match_prepared_artifact(record: dict[str, Any], prepared_artifacts: list[dict[str, Any]]) -> dict[str, Any]:
+    record_pdf = str(record.get("pdf_path", "")).strip()
+    citekey = normalize_key(record.get("citekey"))
+    title = normalize_key(record.get("title"))
+    for item in prepared_artifacts:
+        source_pdf = str(item.get("source_pdf", "")).strip()
+        if record_pdf and source_pdf and record_pdf == source_pdf:
+            return item
+        item_citekey = normalize_key(item.get("citekey"))
+        if citekey and item_citekey and citekey == item_citekey:
+            return item
+        item_title = normalize_key(item.get("paper_title"))
+        if title and item_title and title == item_title:
+            return item
+    return {}
+
+
 def import_method(record: dict[str, Any], metadata_incomplete: bool) -> tuple[str, str]:
     source = (record.get("source") or "").lower()
     language = record.get("language", "")
@@ -463,6 +492,7 @@ def build_records(
     structure_rows: list[dict[str, Any]],
     has_structure: bool,
     pdfs: list[dict[str, Any]],
+    prepared_artifacts: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     records = []
     for idx, raw in enumerate(bib_records, start=1):
@@ -477,6 +507,7 @@ def build_records(
         if verification_status == "REJECT":
             method, import_status = "none", "rejected_do_not_import"
         pdf_path, pdf_source, candidates, attachment_status, attachment_action = match_pdfs(record, pdfs)
+        prepared = match_prepared_artifact({"pdf_path": pdf_path, **record}, prepared_artifacts)
         if verification_status == "REJECT":
             attachment_status, attachment_action = "rejected", "none"
         confidence = candidates[0]["match_confidence"] if candidates else "none"
@@ -509,6 +540,15 @@ def build_records(
             "pdf_source": pdf_source,
             "pdf_match_confidence": confidence,
             "matched_pdf_candidates": candidates,
+            "prepared_pdf_artifacts": {
+                "raw_md": prepared.get("raw_md", ""),
+                "clean_md": prepared.get("clean_md", ""),
+                "chunks_json": prepared.get("chunks_json", ""),
+                "extraction_report_json": prepared.get("extraction_report_json", ""),
+                "evidence_level": prepared.get("evidence_level", ""),
+                "must_check_pdf": prepared.get("must_check_pdf", False),
+                "risk_flags": prepared.get("risk_flags", []),
+            },
             "zotero_item_key": "",
             "attachment_status": attachment_status,
             "attachment_action": attachment_action,
@@ -625,6 +665,7 @@ def main() -> int:
     parser.add_argument("--bib", help="Step 4 文献库.bib")
     parser.add_argument("--structure", help="zotero-架构.json")
     parser.add_argument("--pdf-dir", action="append", default=[], help="PDF 附件池目录，可重复传入")
+    parser.add_argument("--prepared-pdf-artifacts", help="prepared_pdf_artifacts.json from prepare_pdf_for_llm.py")
     parser.add_argument("--chinese", help="中文论文元数据.json (legacy: chinese_papers.json / chinese_metadata.json)")
     parser.add_argument("--output", default="文献-Zotero架构对照.json")
     parser.add_argument("--review", default="文献-Zotero架构对照.md")
@@ -644,8 +685,11 @@ def main() -> int:
         nonblocking.append("中文论文元数据.json")
 
     pdfs = scan_pdf_dirs(args.pdf_dir, warnings)
+    prepared_artifacts = load_prepared_pdf_artifacts(args.prepared_pdf_artifacts, warnings)
     if not args.pdf_dir:
         nonblocking.append("PDF 附件池目录")
+    if args.prepared_pdf_artifacts and not prepared_artifacts:
+        nonblocking.append("Prepared PDF artifacts")
 
     bib_records: list[dict[str, Any]] = []
     if not args.bib or not Path(args.bib).exists():
@@ -657,7 +701,15 @@ def main() -> int:
             blocking.append("文献库.bib")
             warnings.append(f"Could not parse BibTeX: {exc}")
 
-    records = [] if blocking else build_records(bib_records, chinese_index, root, structure_rows, has_structure, pdfs)
+    records = [] if blocking else build_records(
+        bib_records,
+        chinese_index,
+        root,
+        structure_rows,
+        has_structure,
+        pdfs,
+        prepared_artifacts,
+    )
     update_pdf_index_matches(pdfs, records)
     readiness, can_continue, next_step = compute_readiness(records, blocking, nonblocking, warnings)
 

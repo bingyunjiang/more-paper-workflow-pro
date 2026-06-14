@@ -74,6 +74,7 @@
 | `文献-Zotero架构对照.md` | Markdown | 人类审阅版映射表，可截断长字段 |
 | `文献-Zotero架构对照.json` | JSON | 机器执行源，所有字段完整，禁止截断 |
 | `pdf-附件池索引.json` | JSON | 多来源 PDF 的完整路径、来源、匹配状态 |
+| `prepared_pdf_artifacts.json` | JSON | 可选的 PDF 提取产物索引：raw/clean/chunks/report 路径、证据层级、风险标记 |
 | `capability_index.json` | JSON | Step 6 资产能力索引：记录可用文献资产、证据入口、缺口、建议 Step 和降级说明 |
 | `capability_index.md` | Markdown | `capability_index.json` 的人工审阅层，帮助用户判断“现在能从哪一步继续” |
 | Zotero 集合 | Zotero | 与 `zotero-架构.json` 一致的集合树 |
@@ -262,10 +263,40 @@ python3 scripts/build_zotero_plan.py \
   --pdf-index pdf-附件池索引.json
 ```
 
+如果某篇 PDF 已进入全文层，推荐改用这条串联 workflow：
+
+```bash
+# A. 先把单篇 PDF 准备成全文工作层
+python3 scripts/prepare_pdf_for_llm.py \
+  --pdf paper-temp/example.pdf \
+  --paper-title "Example Paper" \
+  --citekey wang2024example \
+  --out-dir pdf-prepared/
+
+# B. 再把 prepared artifacts 回挂到 Step 6 主 JSON
+python3 scripts/build_zotero_plan.py \
+  --bib 文献库.bib \
+  --structure zotero-架构.json \
+  --pdf-dir paper-temp/ \
+  --prepared-pdf-artifacts pdf-prepared/prepared_pdf_artifacts.json \
+  --chinese 中文论文元数据.json \
+  --output 文献-Zotero架构对照.json \
+  --review 文献-Zotero架构对照.md \
+  --pdf-index pdf-附件池索引.json
+
+# C. Step 7 / 7.15 审计时读取 prepared chunks
+python3 scripts/citation_audit.py 论文初稿.md \
+  --mapping 文献-Zotero架构对照.json \
+  --pdf-index pdf-附件池索引.json \
+  --prepared-chunks pdf-prepared/example.chunks.json \
+  --output 引用审计报告.md
+```
+
 输出：
 - `文献-Zotero架构对照.md`：人类审阅版，可为排版截断标题/摘要/URL/PDF 文件名等长字段
 - `文献-Zotero架构对照.json`：机器执行源，所有字段必须完整保留，禁止截断
 - `pdf-附件池索引.json`：记录所有候选 PDF 的完整路径、来源、匹配结果
+- `prepared_pdf_artifacts.json`：PDF 全文工作层索引，供 Step 6/7/7.15/8 共享
 
 **核心任务：**
 结合 BibTeX 条目的 title / author / year / doi / abstract / note 字段，与 `zotero-架构` 的集合和标签方案匹配，生成每篇文献应该进入哪个 Zotero 集合的对照表。
@@ -336,6 +367,13 @@ python3 scripts/build_zotero_plan.py \
       "pdf_source": "existing|step5|supplemental|manual",
       "pdf_match_confidence": "high|medium|low|none",
       "matched_pdf_candidates": [],
+      "prepared_pdf_artifacts": {
+        "raw_md": "",
+        "clean_md": "",
+        "chunks_json": "",
+        "extraction_report_json": "",
+        "evidence_level": ""
+      },
       "zotero_item_key": "",
       "import_status": "pending|ready|metadata_incomplete|manual_required",
       "attachment_status": "missing|found|already_attached|duplicate_candidate|conflict|unknown|rejected",
@@ -375,6 +413,7 @@ python3 scripts/build_zotero_plan.py \
 - 6.3/6.4 所有 Zotero 写入操作都以 `文献-Zotero架构对照.json` 为准。
 - `scripts/build_zotero_plan.py` 只生成中间产物，不调用 Zotero MCP、不修改 Zotero 文库。
 - 缺 `文献库.bib` 时输出 `readiness=blocked`；缺 `zotero-架构.json` 时允许进入 `待确认集合`；缺 PDF 目录时写 warning，不中断。
+- 若已存在 `prepare_pdf_for_llm.py` 生成的产物，应把其路径回挂到 `prepared_pdf_artifacts`，供 Step 7/7.15/8 重用；没有时不阻塞 Step 6。
 
 ---
 

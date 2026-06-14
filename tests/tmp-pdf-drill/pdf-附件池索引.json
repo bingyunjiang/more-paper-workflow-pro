@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.2",
+  "pdf_count": 1,
+  "warnings": [],
+  "pdfs": [
+    {
+      "path": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/example.pdf",
+      "filename": "example.pdf",
+      "source_dir": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill",
+      "size_bytes": 1275,
+      "md5": "8688a9c4678c4b187ccce86953174d67",
+      "match_status": "found",
+      "duplicate_of": "",
+      "matched_record_id": "stable-001",
+      "matched_citekey": "wang2024example",
+      "match_confidence": "high"
+    }
+  ]
+}

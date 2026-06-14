@@ -1,0 +1,15 @@
+{
+  "source_pdf": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/example.pdf",
+  "paper_title": "Example Paper",
+  "citekey": "wang2024example",
+  "zotero_item_key": "",
+  "page_count": 1,
+  "chunk_count": 1,
+  "evidence_level": "pdf_fulltext_supported",
+  "notes": [
+    "raw.md is the direct extracted layer",
+    "clean.md is the cleaned reading layer",
+    "chunks.json is the LLM working layer",
+    "original PDF remains the truth source for quotes, pages, equations, tables, and figure captions"
+  ]
+}

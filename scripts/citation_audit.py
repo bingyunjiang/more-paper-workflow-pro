@@ -59,6 +59,7 @@ class AuditResult:
     abstract: str           # Retrieved abstract (truncated)
     reasoning: str          # Why this support level was assigned
     suggestion: str = ""    # What the user should do (e.g. "check full text")
+    pdf_risk_note: str = "" # PDF-derived warning from prepared chunks / mapping
 
 
 # ── Manuscript Parsing ───────────────────────────────────────────────────────
@@ -357,6 +358,8 @@ def generate_audit_report(
 
 **判断：** {r.reasoning}
 
+**PDF 风险提醒：** {r.pdf_risk_note or "无"}
+
 **建议：** {r.suggestion}
 
 ---
@@ -376,6 +379,8 @@ def generate_audit_report(
 
 **判断：** {r.reasoning}
 
+**PDF 风险提醒：** {r.pdf_risk_note or "无"}
+
 **建议：** {r.suggestion}
 
 ---
@@ -387,7 +392,8 @@ def generate_audit_report(
     if unknown:
         report += "## ⚠️ 无法判断的文献（缺摘要）\n\n"
         for r in unknown:
-            report += f"- **[{r.citation.index}]** {r.citation.marker} → {r.suggestion}\n"
+            extra = f"；PDF 风险：{r.pdf_risk_note}" if r.pdf_risk_note else ""
+            report += f"- **[{r.citation.index}]** {r.citation.marker} → {r.suggestion}{extra}\n"
         report += "\n"
 
     # Summary
@@ -403,10 +409,82 @@ def generate_audit_report(
 """
     elif weak:
         report += "## 审计结论\n\n未发现明显引用不当，但有少量引用建议核对全文确认。可以进入 Step 8 润色。\n"
+    elif unknown:
+        report += "## ⚠️ 审计结论\n\n当前引用未发现明确不当项，但存在无法判断的条目；在补摘要或回 PDF 全文核验前，不应视为“全部通过审计”。\n"
     else:
         report += "## ✅ 审计结论\n\n所有引用通过审计，未发现引用不当问题。可以进入 Step 8 润色。\n"
 
     return report
+
+
+def load_mapping_records(path: str | None) -> list[dict]:
+    if not path or not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return []
+    if isinstance(data, dict) and isinstance(data.get("records"), list):
+        return [r for r in data["records"] if isinstance(r, dict)]
+    if isinstance(data, list):
+        return [r for r in data if isinstance(r, dict)]
+    return []
+
+
+def load_prepared_chunks(path: str | None) -> list[dict]:
+    if not path or not os.path.exists(path):
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return []
+    if isinstance(data, list):
+        return [r for r in data if isinstance(r, dict)]
+    return []
+
+
+def enrich_citations_with_mapping(
+    citations: list[CitationRef],
+    mapping_records: list[dict],
+) -> None:
+    """Use mapping JSON to fill citekey/title/doi/zotero_item_key hints."""
+    by_title = {}
+    for rec in mapping_records:
+        title = str(rec.get("title", "")).strip().lower()
+        if title:
+            by_title[title] = rec
+
+    for cit in citations:
+        if cit.index > 0 and cit.bib_entry:
+            title_guess = _extract_title_from_bib(cit.bib_entry).lower()
+            rec = by_title.get(title_guess)
+            if rec:
+                cit.title = rec.get("title", "") or cit.title
+                cit.doi = cit.doi or rec.get("doi", "")
+
+
+def build_pdf_risk_note(citation: CitationRef, prepared_chunks: list[dict]) -> str:
+    """Find prepared chunk warnings matching the citation title or citekey."""
+    title = citation.title.strip().lower()
+    if not title:
+        title = _extract_title_from_bib(citation.bib_entry).lower()
+    notes = []
+    for chunk in prepared_chunks:
+        chunk_title = str(chunk.get("paper_title", "")).strip().lower()
+        if title and chunk_title and title != chunk_title:
+            continue
+        if chunk.get("must_check_pdf"):
+            flags = chunk.get("risk_flags") or []
+            if flags:
+                notes.extend(flags)
+            else:
+                notes.append("must_check_pdf")
+    if not notes:
+        return ""
+    uniq = sorted(set(notes))
+    return "该引用关联的 PDF 提取结果包含高风险内容，需要回原 PDF 核验：" + ", ".join(uniq)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -508,6 +586,15 @@ def _resolve_doi_for_citation(
     return ""
 
 
+def _extract_title_from_bib(bib_entry: str) -> str:
+    if not bib_entry:
+        return ""
+    parts = [p.strip() for p in re.split(r"\.\s+", bib_entry) if p.strip()]
+    if len(parts) >= 2:
+        return parts[1]
+    return parts[0] if parts else ""
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -529,6 +616,18 @@ def main():
     parser.add_argument(
         "--lit-table",
         help="Path to 检索文献表.md for DOI cross-reference",
+    )
+    parser.add_argument(
+        "--mapping",
+        help="Path to 文献-Zotero架构对照.json",
+    )
+    parser.add_argument(
+        "--pdf-index",
+        help="Path to pdf-附件池索引.json (currently informational only)",
+    )
+    parser.add_argument(
+        "--prepared-chunks",
+        help="Path to prepared PDF chunks JSON from prepare_pdf_for_llm.py",
     )
     parser.add_argument(
         "--zotero",
@@ -572,12 +671,20 @@ def main():
     dois = extract_dois_from_bib(bib_entries)
     print(f"   提取 {len(bib_entries)} 条参考文献条目，{len(dois)} 个 DOI")
 
+    mapping_records = load_mapping_records(args.mapping)
+    prepared_chunks = load_prepared_chunks(args.prepared_chunks)
+    if mapping_records:
+        print(f"🗂 读取映射记录: {len(mapping_records)}")
+    if prepared_chunks:
+        print(f"🧩 读取 prepared chunks: {len(prepared_chunks)}")
+
     # Step 3: Enrich citations with bib data
     for cit in citations:
         if cit.index > 0 and cit.index in bib_entries:
             cit.bib_entry = bib_entries[cit.index]
             if cit.index in dois:
                 cit.doi = dois[cit.index]
+    enrich_citations_with_mapping(citations, mapping_records)
 
     if args.extract_only:
         print("\n── 引用清单 ──")
@@ -613,6 +720,9 @@ def main():
             print(f"   [{cit.index}] 无 DOI — 跳过")
 
         result = score_citation_support(cit, abstract or "", title)
+        result.pdf_risk_note = build_pdf_risk_note(cit, prepared_chunks)
+        if result.pdf_risk_note and result.support_level == "✅ 支撑":
+            result.suggestion = "摘要层支撑成立，但涉及高风险 PDF 内容，仍建议回原 PDF 核验"
         results.append(result)
 
         # Rate limit

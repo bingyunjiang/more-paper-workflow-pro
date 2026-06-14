@@ -10,6 +10,30 @@
 
 ## v1.0.12-20260614 (2026-06-14)
 
+### Step 6 / Step 7 / Step 8：PDF 全文工作层闭环 🆕
+
+- **PDF 处理口径正式收口**：新增 `references/pdf-processing-policy.md`，明确 `metadata-first / selective-fulltext / batch-fulltext` 三档读取模式，固定“默认不全量 `PDF -> Markdown`，而是先 `JSON + Zotero`、按需升级到全文层”的主链
+- **Step 7 / Step 8 接入统一 PDF 边界**：
+  - Step 7 新增全文升级触发条件：关键 claim、方法细节、页码/图表/公式核对、引用审计、用户明确要求批量预读
+  - Step 7 固定提取产物最小锚点：`paper_title / citekey / zotero_item_key / source_pdf / pages / section / chunk_id / evidence_level / must_check_pdf`
+  - Step 8 明确只能消费已确认的 PDF 工作层，不得把未确认提取文本当成新增外部证据
+- **新增轻量脚本 `scripts/prepare_pdf_for_llm.py`**：
+  - 输入单篇 PDF，输出 `raw.md`、`clean.md`、`chunks.json`、`extraction_report.json`
+  - 执行基础清洗：页码/页眉页脚/断行/连字符
+  - 自动打 `must_check_pdf` 与 `risk_flags`
+  - 新增 `prepared_pdf_artifacts.json` 索引，供 Step 6/7/7.15/8 共享
+- **Step 6 主 JSON 接入 PDF 工作层**：
+  - `agents/step_6_zotero.md` 新增 `prepared_pdf_artifacts.json` 标准输出说明
+  - `scripts/build_zotero_plan.py` 新增 `--prepared-pdf-artifacts`
+  - `文献-Zotero架构对照.json` 的每条 record 现在可回挂 `raw_md / clean_md / chunks_json / extraction_report_json / evidence_level / must_check_pdf / risk_flags`
+- **`scripts/citation_audit.py` 升级为“摘要审计 + PDF 风险提醒”双层结构**：
+  - 新增 `--mapping`、`--pdf-index`、`--prepared-chunks`
+  - 审计报告可读取 prepared chunks 中的 `must_check_pdf / risk_flags`
+  - 即使摘要层看似支撑，也会提醒高风险内容必须回原 PDF 核验
+  - 修复一个真实演练中暴露的结论 bug：当全部引用都是 `⚠️ 无法判断` 时，不再错误写成“全部通过审计”
+- **标准命令链补齐**：`SKILL.md` 与 `agents/step_6_zotero.md` 现已提供 `prepare_pdf_for_llm.py -> build_zotero_plan.py -> citation_audit.py` 的最小 example workflow
+- **真实样例演练完成**：在 `tests/tmp-pdf-drill/` 里实际跑通 `prepare -> plan -> audit` 三段链路，验证了 prepared artifacts 回挂、审计风险提示和文档命令示例的一致性
+
 ### Step 1 / Step 2：研究问题收敛器 + 大纲唯一生成层 🆕
 
 - **Step 1 借鉴 `deep-research` 的 Socratic 协议**：从“研究方向确认”升级为“研究问题收敛 + 方法偏好成形 + 检索意图判定 + 反方挑战暴露”

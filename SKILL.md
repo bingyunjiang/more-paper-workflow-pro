@@ -577,6 +577,7 @@ README 首屏现在固定给 3 条公共入口示例，分别对应：
 | `scripts/generate_section_blueprints.py` | 7.2 | 章节蓝图生成（输出 `section_blueprints.md/json`）🆕 |
 | `scripts/generate_writing_rationale.py` | 7.2 | 写作逻辑矩阵生成（输出 `writing_rationale_matrix.md/json`）🆕 |
 | `scripts/batch_read_pdfs.py` | 7 | 批量提取 PDF 全文文本 |
+| `scripts/prepare_pdf_for_llm.py` | 7/7.15/8 | 单篇或定点 PDF 提取、基础清洗、锚点分块 🆕 |
 | `scripts/citation_audit.py` | 7.15 | 写后引用审计 🆕 |
 | `scripts/generate_figures.py` | 7.14 | 科研图表生成 🆕 |
 | `scripts/md_to_pdf.py` | 2/3/4/7.9 | Markdown → PDF 转换器 |
@@ -619,10 +620,50 @@ fi
 | `references/literature-review-docx-guide.md` | Step 7 — 综述 DOCX 写作结构 |
 | `references/gbt7714-2015-citation-format.md` | Step 7 — GB/T 7714 引用格式 |
 | `references/citation-audit-guide.md` | Step 7.15 — 引用审计方法论 |
+| `references/pdf-processing-policy.md` | Step 6/7/8 — PDF 读取模式、全文升级条件、清洗与回查锚点 🆕 |
 | `references/direct-api-search-fallback.md` | Step 4 — search_by_topic.py 不可用时的直接 API 检索方案 |
 | `references/nature-figure-style-guide.md` | Step 7.14 — 可选图表设计参考，不作为默认风格承诺 |
 | `references/publisher-access-matrix.md` | Step 5 — 出版商下载可行性对照表 |
 | `agents/known_pitfalls.md` 🆕 | 全部 — 已知陷阱与故障排除 |
+
+### Step 7/8 PDF 处理口径
+
+- Step 7/8 默认遵循 `references/pdf-processing-policy.md`
+- 默认模式是 `metadata-first`，不是全量 `PDF -> Markdown`
+- 只有在关键 claim、方法细节、引用审计、图表/公式/页码核对等场景下，才升级到 `selective-fulltext`
+- `batch-fulltext` 只用于综述批读、章节预研或用户明确要求的批量全文处理
+- 提取后的 `md/txt/chunks` 是模型输入层；原 PDF 仍是保真核验源
+
+### PDF 工作流最小示例
+
+当某篇文献需要进入全文层时，推荐按这条最小链路执行：
+
+```bash
+# 1) 从单篇 PDF 生成 clean/chunks/artifact index
+python3 scripts/prepare_pdf_for_llm.py \
+  --pdf paper-temp/example.pdf \
+  --paper-title "Example Paper" \
+  --citekey wang2024example \
+  --out-dir pdf-prepared/
+
+# 2) 把 prepared artifacts 回挂进 Step 6 主 JSON
+python3 scripts/build_zotero_plan.py \
+  --bib 文献库.bib \
+  --structure zotero-架构.json \
+  --pdf-dir paper-temp/ \
+  --prepared-pdf-artifacts pdf-prepared/prepared_pdf_artifacts.json \
+  --chinese 中文论文元数据.json \
+  --output 文献-Zotero架构对照.json \
+  --review 文献-Zotero架构对照.md \
+  --pdf-index pdf-附件池索引.json
+
+# 3) 审计正文引用，并读取 prepared chunks 风险标记
+python3 scripts/citation_audit.py 论文初稿.md \
+  --mapping 文献-Zotero架构对照.json \
+  --pdf-index pdf-附件池索引.json \
+  --prepared-chunks pdf-prepared/example.chunks.json \
+  --output 引用审计报告.md
+```
 
 ---
 

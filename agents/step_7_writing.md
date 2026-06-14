@@ -68,6 +68,7 @@
 | Zotero 架构 | Step 6 | .md/.json | ✅ |
 | 文献-Zotero架构对照 | Step 6 / Zotero MCP 动态生成 | .json + .md | 推荐 |
 | PDF 附件池索引 | Step 6 / Zotero MCP 动态生成 | .json | 可选 |
+| Prepared PDF artifacts | Step 6 / `prepare_pdf_for_llm.py` | `.json` + `.md` | 可选；全文提取后的带锚点工作层 |
 | Zotero 条目/PDF 附件 | Zotero 文库 | Zotero MCP | ✅ |
 | 已有草稿/指定章节 | 用户提供 | .md/.docx/章节文本 | 可选 |
 | 综述矩阵 | Step 7.1 | .csv/.md | 写作前生成 |
@@ -94,6 +95,7 @@ existing-draft 可以跳过前链，但不能跳过证据确认。
 | `文献-Zotero架构对照.json` | 作为机器主索引读取 tier、collection、item_key、pdf_path | 缺字段时动态查 Zotero |
 | Zotero 集合/标签/条目 key | 只读生成最小映射 | 不要求先跑 Step 6 |
 | PDF 目录 / `pdf-附件池索引.json` | 建立附件池和可读证据列表 | 无 Zotero key 时标为本地证据 |
+| `prepared_pdf_artifacts.json` / `*.chunks.json` | 作为全文工作层输入，保留 `chunk_id/pages/evidence_level/must_check_pdf` | 无锚点时只作辅助阅读，不能直接升级为强证据 |
 | workflow search results JSON / BibTeX | 构造参考文献候选和证据等级 | 只能作为元数据/摘要级证据，除非补到 PDF/笔记 |
 | 已有草稿/指定章节 | 识别写作模式和目标章节 | 缺引用审计时标记风险，不阻塞非关键改写 |
 
@@ -234,6 +236,52 @@ Step 7 进入正文前，必须先明确两件事：
 
 > 不要一上来就读 PDF 全文。优先用 `文献-Zotero架构对照.json` 确定 T1/T2/T3、集合归属、Zotero item key 和 PDF 状态；如存在 `retrieval_candidates.json`，只把它视为 `retrieved_candidate` 候选，不得直接写入正文或矩阵；必须再回到笔记、标注、元数据或 PDF 原文确认。`.md` 只用于人工审阅。
 
+### 7.1.1 PDF 读取模式
+
+Step 7 默认遵循 `references/pdf-processing-policy.md`，固定使用以下三档模式：
+
+- `metadata-first`
+  只读 `文献-Zotero架构对照.json`、Zotero notes、annotations、metadata、BibTeX/中文元数据/摘要。适用于章节规划、背景性综述、候选文献筛选和低风险概括。
+- `selective-fulltext`
+  当关键 claim、方法细节、参数、实验设置、页码、图注、表格或公式需要原文确认时，定点读取单篇 PDF、页段或小节；必要时可先提取为带锚点的 `clean.md/chunks.json`。
+- `batch-fulltext`
+  只用于综述批读、章节预研或用户明确要求的批量全文处理，不作为所有写作任务的默认起点。
+
+### 7.1.2 从元数据层升级到全文层的触发条件
+
+满足任一条件即可从 `metadata-first` 升级到 `selective-fulltext` 或 `batch-fulltext`：
+
+- 需要支撑关键结论、强 claim、机制判断
+- 需要核对实验参数、方法步骤、训练细节
+- 需要核对页码、原句、图注、表格、公式
+- 当前只有 metadata / abstract / notes，无法支撑判断
+- 正在执行 7.15 引用审计
+- 用户明确要求全文预读、批量综述或章节级证据整理
+
+若只是主题归类、研究脉络说明、低风险综述句或候选定位，不应默认升级到全文层。
+
+### 7.1.3 全文提取结果的使用约束
+
+若使用 `scripts/prepare_pdf_for_llm.py` 或其他等价方式提取 PDF 文本，产物至少应保留：
+
+- `paper_title`
+- `citekey`
+- `zotero_item_key`
+- `source_pdf`
+- `pages`
+- `section`
+- `chunk_id`
+- `evidence_level`
+- `must_check_pdf`
+
+推荐 `evidence_level`：
+
+- `metadata_only`
+- `notes_or_abstract_supported`
+- `pdf_fulltext_supported`
+
+提取文本是模型工作输入，不替代原 PDF 的最终真值地位。
+
 **纳入范围：**
 - T1/T2/T3 均进入综述矩阵。T1/T2 是写作主证据，T3 作为背景、补充、反例或方法参照。
 - T4 已在 Step 4 剔除，默认不进入 Step 7；如用户要求补充，只能作为“候选补查文献”，不得直接引用。
@@ -254,6 +302,22 @@ Step 7 进入正文前，必须先明确两件事：
 | Step 4 `WARN` 文献 | 背景、研究脉络、待补查线索 | 关键结论、强 claim、实验数据、机制证明 | Weak/Background |
 
 > 摘要可以派上用场，但不能被当作全文。它适合判断“这篇文献研究什么、用了什么大类方法、与主题是否相关”，不适合支撑“作者具体发现了多少、参数如何设置、机制如何证明”这类强断言。
+
+### 7.1.4 高风险内容回 PDF 规则
+
+以下内容不得仅凭提取文本直接进入最终引用或强结论，必须回到原 PDF 或可核验的 Zotero 原文层确认：
+
+- 公式
+- 复杂表格
+- 图注
+- 页码级直接引语
+- appendix 细节
+- 数值结果的精确比较
+
+这类内容应显式标记：
+
+- `must_check_pdf: true`
+- `risk_flags`: `equation` / `table` / `figure_caption` / `direct_quote` / `appendix_detail`
 
 **缺失值约定：** `未提及`（论文确实未讨论）/ `待补充`（计划后续补全）/ `推断：{内容}`（基于已有信息合理推断）
 
@@ -867,9 +931,16 @@ python3 scripts/generate_figures.py 论文初稿.md --data data/ --output figure
 ```
 
 ```bash
-python3 scripts/citation_audit.py 论文初稿.md --mapping 文献-Zotero架构对照.json --pdf-index pdf-附件池索引.json --output 引用审计报告.md
-: "fallback: no pdf-index, but citations can map to Zotero items"
-python3 scripts/citation_audit.py 论文初稿.md --zotero-collection "论文文献库" --output 引用审计报告.md
+python3 scripts/citation_audit.py 论文初稿.md \
+  --mapping 文献-Zotero架构对照.json \
+  --pdf-index pdf-附件池索引.json \
+  --prepared-chunks paper.clean.chunks.json \
+  --output 引用审计报告.md
+
+# fallback: no prepared chunks, but citations can still map to Zotero items
+python3 scripts/citation_audit.py 论文初稿.md \
+  --mapping 文献-Zotero架构对照.json \
+  --output 引用审计报告.md
 ```
 
 **三层审计结构：**

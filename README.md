@@ -739,6 +739,11 @@ ScienceDirect、CNKI、万方等下载需要机构订阅（IP 或 SSO）。Sci-H
 完整版本历史请参见 [CHANGELOG.md](CHANGELOG.md)。以下为各版本要点：
 
 ### v1.0.12-20260614 (2026-06-14)
+- **PDF 全文工作层闭环**：新增 `references/pdf-processing-policy.md`，正式收口 `metadata-first / selective-fulltext / batch-fulltext` 三档模式；默认不全量 `PDF -> Markdown`，而是先 `JSON + Zotero`，只在关键 claim、方法细节、图表/公式/页码核对和引用审计时升级到全文层
+- **新增 `scripts/prepare_pdf_for_llm.py`**：单篇或定点 PDF 可直接生成 `raw.md`、`clean.md`、`chunks.json`、`extraction_report.json` 与 `prepared_pdf_artifacts.json`，用于 Step 7/7.15/8 的全文工作层
+- **Step 6 主 JSON 接入 prepared artifacts**：`scripts/build_zotero_plan.py` 新增 `--prepared-pdf-artifacts`，`文献-Zotero架构对照.json` 的每条 record 现在可回挂全文提取结果、证据层级、`must_check_pdf` 和 `risk_flags`
+- **引用审计升级为“摘要支撑 + PDF 风险提醒”双层结构**：`scripts/citation_audit.py` 新增 `--mapping`、`--pdf-index`、`--prepared-chunks`，即使摘要层看似支撑，也会对高风险内容提示“必须回原 PDF 核验”；同时修复了“全部无法判断却误报通过”的结论 bug
+- **标准命令链与样例演练补齐**：`SKILL.md` 和 `agents/step_6_zotero.md` 现已提供 `prepare_pdf_for_llm.py -> build_zotero_plan.py -> citation_audit.py` 的最小 example workflow，并在 `tests/tmp-pdf-drill/` 中完成真实链路演练
 - **Step 1 / Step 2 深化重构**：Step 1 现在明确只做研究问题收敛与方法蓝图，不生成章节结构；Step 2 明确为完整大纲唯一生成层，且 `2.3` 继续以已有大纲为主体，Step 1 仅作约束源
 - **RAG 候选层落位**：新增 `retrieval_index_manifest.json`、`retrieval_candidates.json` 契约，明确 RAG 只负责候选定位，不能直接升级为 `VERIFIED` 或直接决定审计动作
 - **图表证据子链加入 Step 7**：新增 `figure_index.json`、`figure_evidence_report.md/json` 契约，并把图注/正文绑定、图表 claim、图表误引风险接入 `argument_plan`、`revision-only` 和 `7.15`

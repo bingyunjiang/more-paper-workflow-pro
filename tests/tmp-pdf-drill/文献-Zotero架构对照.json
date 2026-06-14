@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.2",
+  "artifact_type": "zotero_plan",
+  "workflow_contract_schema": "workflow-contracts.v1",
+  "plan_only": true,
+  "root_collection": "示例论文文献库",
+  "readiness": "complete",
+  "can_continue": true,
+  "blocking_missing": [],
+  "nonblocking_missing": [],
+  "warnings": [],
+  "recommended_next_step": "可进入 6c 创建/复用 Zotero 集合，并按 JSON 分步写入。",
+  "records": [
+    {
+      "record_id": "stable-001",
+      "citekey": "wang2024example",
+      "source": "",
+      "source_id": "",
+      "language": "",
+      "title": "Example Paper",
+      "authors": [
+        "Wang, Li",
+        "Zhang, Min"
+      ],
+      "year": "2024",
+      "publication_title": "Journal of Thermal Systems",
+      "doi": "",
+      "article_url": "",
+      "abstract": "This study proposes a thermal control model for battery modules and validates it with simulation and experiment.",
+      "tier": "T1",
+      "score": "22",
+      "subtopic": "S1: 热管理",
+      "verification_status": "VERIFIED_LOCAL",
+      "verification_confidence": "medium",
+      "warn_class": "",
+      "verified_sources": "local_pdf",
+      "collection_path": [
+        "示例论文文献库",
+        "2-方法"
+      ],
+      "collection_key": "",
+      "tags": [
+        "S1"
+      ],
+      "import_method": "bibtex",
+      "import_status": "ready",
+      "pdf_path": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/example.pdf",
+      "pdf_source": "manual",
+      "pdf_match_confidence": "high",
+      "matched_pdf_candidates": [
+        {
+          "path": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/example.pdf",
+          "filename": "example.pdf",
+          "size_bytes": 1275,
+          "md5": "8688a9c4678c4b187ccce86953174d67",
+          "match_score": 80,
+          "match_confidence": "high",
+          "reasons": [
+            "title_filename_match"
+          ],
+          "duplicate_pdf_candidate": false
+        }
+      ],
+      "prepared_pdf_artifacts": {
+        "raw_md": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/pdf-prepared/example.raw.md",
+        "clean_md": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/pdf-prepared/example.clean.md",
+        "chunks_json": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/pdf-prepared/example.chunks.json",
+        "extraction_report_json": "/Users/Bing/.hermes/skills/more-paper-workflow-pro-skill/tests/tmp-pdf-drill/pdf-prepared/example.extraction_report.json",
+        "evidence_level": "pdf_fulltext_supported",
+        "must_check_pdf": true,
+        "risk_flags": [
+          "appendix_detail"
+        ]
+      },
+      "zotero_item_key": "",
+      "attachment_status": "found",
+      "attachment_action": "manual_drag",
+      "existing_attachment_keys": [],
+      "notes": ""
+    }
+  ]
+}

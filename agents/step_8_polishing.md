@@ -75,6 +75,8 @@ Step 8 可以补局部内容，但仅限可由现有正文、Step 7 三工件、
 
 > **RAG 边界：** Step 8 默认消费 `argument_plan` 中已确认的证据状态。必要时可读取 `retrieval_candidates.json` 做缺口提醒或修订风险说明，但不得把候选层内容直接当作正文证据、引用修复依据或 claim 支撑结论，不允许跳过原文确认层。
 
+> **PDF 边界：** Step 8 默认消费 Step 7 已确认的证据层与 PDF 处理结果。必要时可以读取带锚点的 `clean.md/chunks.json` 作为修订参考，但不得把未经确认的提取文本当成新增外部证据，也不得绕过原 PDF 的最终核验地位。统一口径见 `references/pdf-processing-policy.md`。
+
 **写作工件读取优先级：**
 
 若同时存在 Step 7 的统一工件：
@@ -90,6 +92,23 @@ JSON 缺失时，可降级读取 `.md`，但需在质量报告中标记“基于
 - `style_profile.json`：约束句长、语域、引用密度、标题层级
 - `section_blueprints.json`：约束章节功能、信息顺序、图表位置
 - `writing_rationale_matrix.json`：约束保留的论证顺序、不可删改的证据链、保守改写边界
+
+### 4.1 PDF 提取结果的使用限制
+
+Step 8 只允许把 PDF 提取结果用于以下用途：
+
+- 解释已有正文的语言与结构问题
+- 标记可能需要回 PDF 核验的高风险位置
+- 辅助定位 claim 所在 section / pages / chunk
+- 帮助保持术语、句意和章节逻辑与 Step 7 一致
+
+Step 8 不允许：
+
+- 把新提取的 PDF 文本直接升级为新增引用依据
+- 把候选提取文本当作 claim 修复结论
+- 用全文提取替代 Step 7 的完整引用审计
+
+若提取结果缺少 `pages / source_pdf / chunk_id / evidence_level / must_check_pdf` 等锚点，应在质量报告中标记“PDF 提取结果不可完全回查”，不得伪装为完整证据层。
 
 ### 缺失输入降级规则
 
