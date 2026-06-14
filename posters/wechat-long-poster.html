@@ -23,7 +23,7 @@
       --radius-xl: 36px;
       --radius-lg: 24px;
       --radius-md: 18px;
-      --poster-width: 820px;
+      --poster-width: 860px;
     }
 
     * {
@@ -83,7 +83,7 @@
       position: relative;
       z-index: 1;
       margin-bottom: 22px;
-      padding: 34px 34px 36px;
+      padding: 34px 34px 72px;
       border-radius: var(--radius-xl);
       background: var(--card);
       border: 1px solid rgba(255, 255, 255, 0.65);
@@ -92,10 +92,49 @@
       overflow: hidden;
     }
 
+    .screen::before {
+      content: attr(data-screen);
+      position: absolute;
+      top: 18px;
+      right: 22px;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: rgba(21, 35, 61, 0.26);
+    }
+
+    .screen::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, rgba(201, 146, 44, 0.92), rgba(54, 95, 153, 0.78));
+    }
+
     .screen.hero {
       padding: 0;
       background: linear-gradient(155deg, #15233d 0%, #1b2d4d 42%, #29466e 100%);
       color: #f7f2ea;
+    }
+
+    .screen.hero::before,
+    .screen.hero::after {
+      display: none;
+    }
+
+    .screen.tone-blue {
+      background: linear-gradient(180deg, rgba(242, 246, 252, 0.96), rgba(255, 255, 255, 0.82));
+    }
+
+    .screen.tone-gold {
+      background: linear-gradient(180deg, rgba(250, 245, 234, 0.96), rgba(255, 255, 255, 0.82));
+    }
+
+    .screen.tone-sage {
+      background: linear-gradient(180deg, rgba(240, 246, 241, 0.94), rgba(255, 255, 255, 0.82));
     }
 
     .hero-inner {
@@ -142,6 +181,7 @@
       font-weight: 800;
       letter-spacing: -0.03em;
       max-width: 620px;
+      text-wrap: balance;
     }
 
     .hero-subtitle {
@@ -164,14 +204,14 @@
     .chip-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 26px;
+      gap: 14px;
+      margin-top: 30px;
     }
 
     .chip {
-      padding: 9px 14px;
+      padding: 12px 18px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 700;
       color: #14213c;
       background: linear-gradient(180deg, #f6e5bf 0%, #e3c985 100%);
@@ -196,6 +236,7 @@
       letter-spacing: -0.03em;
       font-weight: 800;
       max-width: 690px;
+      text-wrap: balance;
     }
 
     .section-intro {
@@ -332,7 +373,7 @@
     .step-item strong,
     .route-item strong {
       display: block;
-      font-size: 18px;
+      font-size: 21px;
       line-height: 1.4;
       margin-bottom: 6px;
     }
@@ -345,7 +386,7 @@
     .genre-item span {
       display: block;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 17px;
       line-height: 1.6;
     }
 
@@ -412,43 +453,138 @@
       font-weight: 700;
     }
 
-    .footer-screen {
-      background: linear-gradient(160deg, #15233d 0%, #213861 100%);
-      color: #f7f2ea;
-      text-align: center;
-      padding-top: 40px;
-      padding-bottom: 42px;
+    .split-band {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
     }
 
-    .footer-screen .section-kicker {
-      justify-content: center;
-      color: rgba(243, 223, 184, 0.84);
+    .mini-panel {
+      padding: 18px 18px 20px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
     }
 
-    .footer-screen .section-title {
-      margin-left: auto;
-      margin-right: auto;
-      color: #fff8eb;
-      max-width: 620px;
-    }
-
-    .footer-screen .section-intro {
-      margin-left: auto;
-      margin-right: auto;
-      color: rgba(247, 242, 234, 0.76);
-      max-width: 620px;
-    }
-
-    .footer-badge {
-      margin-top: 24px;
-      display: inline-block;
-      padding: 12px 18px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #f3dfb8, #ddc07f);
-      color: #14213c;
-      font-size: 14px;
+    .mini-panel h3 {
+      font-size: 16px;
+      line-height: 1.4;
       font-weight: 800;
-      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      color: var(--navy);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .mini-panel p {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .metric-card {
+      padding: 18px 18px 20px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(54, 95, 153, 0.1), rgba(255, 255, 255, 0.94));
+      border: 1px solid var(--line);
+    }
+
+    .metric-number {
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--navy);
+    }
+
+    .metric-label {
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .metric-copy {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+      max-width: 700px;
+    }
+
+    .hero-card {
+      padding: 18px 18px 20px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .hero-card-label {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: rgba(243, 223, 184, 0.82);
+      margin-bottom: 8px;
+    }
+
+    .hero-card-title {
+      font-size: 20px;
+      line-height: 1.35;
+      font-weight: 800;
+      color: #fff8eb;
+    }
+
+    .hero-card-copy {
+      margin-top: 8px;
+      color: rgba(247, 242, 234, 0.76);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .screen-footer {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      bottom: 22px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(21, 35, 61, 0.08);
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(21, 35, 61, 0.56);
+      letter-spacing: 0.02em;
+      word-break: break-all;
+    }
+
+    .hero-screen-footer {
+      position: absolute;
+      left: 36px;
+      right: 36px;
+      bottom: 18px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(247, 242, 234, 0.6);
+      letter-spacing: 0.02em;
+      word-break: break-all;
     }
 
     @media (max-width: 760px) {
@@ -486,62 +622,155 @@
 
       .steps-grid,
       .genre-grid,
-      .artifact-grid {
+      .artifact-grid,
+      .split-band,
+      .metrics-grid,
+      .hero-grid {
         grid-template-columns: 1fr;
+      }
+
+      .screen-footer {
+        left: 20px;
+        right: 20px;
+        bottom: 16px;
+      }
+
+      .hero-screen-footer {
+        left: 20px;
+        right: 20px;
+        bottom: 14px;
       }
     }
   </style>
 </head>
 <body>
   <main class="poster">
-    <section class="screen hero">
+    <section class="screen hero" data-screen="Hero">
       <div class="hero-inner">
-        <div class="eyebrow">Academic Workflow · Dynamic Routing</div>
+        <div class="eyebrow">Research Workflow · Search to Writing</div>
         <h1 class="hero-title">More Paper Workflow Pro Skill</h1>
-        <p class="hero-subtitle">AI 赋能科研，帮你在真实研究状态里高效前进</p>
+        <p class="hero-subtitle">一套真正能落地的科研工作流和工具</p>
         <p class="hero-copy">
-          不是线性 8 步论文助手，而是一套可直达、可回跳、可审计的学术工作流系统。
-          它围绕真实研究现场设计，让流程服务研究推进，而不是反过来绑架研究。
+          它的优势不只是步骤完整
+          而是能按材料状态直接进入、按真实研究状态继续推进
         </p>
+        <div class="hero-grid">
+          <div class="hero-card">
+            <div class="hero-card-label">Advantage 01</div>
+            <div class="hero-card-title">不是只会检索</div>
+            <div class="hero-card-copy">从选题、大纲、检索到下载、Zotero、写作、润色，整条链路都能接住</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-card-label">Advantage 02</div>
+            <div class="hero-card-title">不是线性锁死</div>
+            <div class="hero-card-copy">已有大纲、BibTeX、PDF、草稿，都可以直接接入，不必从 Step 1 重跑</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-card-label">Advantage 03</div>
+            <div class="hero-card-title">不是粗暴代写</div>
+            <div class="hero-card-copy">写作会分流，修订有边界，引用风险与证据缺口会被明确标出</div>
+          </div>
+          <div class="hero-card">
+            <div class="hero-card-label">Advantage 04</div>
+            <div class="hero-card-title">不是轻量玩具</div>
+            <div class="hero-card-copy">大量脚本、协议、文档和快速迭代沉淀成真实可运行的研究型工程资产</div>
+          </div>
+        </div>
         <div class="chip-row">
-          <span class="chip">可直达</span>
-          <span class="chip">可回跳</span>
-          <span class="chip">可审计</span>
-          <span class="chip">材料驱动</span>
-          <span class="chip">风险可见</span>
+          <span class="chip">检索</span>
+          <span class="chip">大纲</span>
+          <span class="chip">下载</span>
+          <span class="chip">文库</span>
+          <span class="chip">写作</span>
+          <span class="chip">润色</span>
+          <span class="chip">反幻觉</span>
+          <span class="chip">证据约束</span>
         </div>
       </div>
+      <div class="hero-screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 2 · Pain Points</div>
-      <h2 class="section-title">论文流程最大的问题，不是步骤不够多，而是默认你必须从头开始。</h2>
+    <section class="screen tone-blue" data-screen="01">
+      <div class="section-kicker">Screen 2 · Project Scale</div>
+      <h2 class="section-title">这不是一张轻量概念图 背后是一个真实堆出来的大型 skill 工程</h2>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-number">5.65 亿</div>
+          <div class="metric-label">Token Consumed</div>
+          <div class="metric-copy">累计消耗 Token 规模，直接对应真实开发与调试投入</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-number">$544.8819</div>
+          <div class="metric-label">Cumulative Value</div>
+          <div class="metric-copy">累计投入价值，已经沉淀为当前版本能力</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-number">151</div>
+          <div class="metric-label">Script Files</div>
+          <div class="metric-copy">`scripts/` 目录累计脚本文件数，体现工程展开深度</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-number">24,949</div>
+          <div class="metric-label">Code Lines</div>
+          <div class="metric-copy">Python 与 Shell 代码累计行数</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-number">14,078</div>
+          <div class="metric-label">Text Lines</div>
+          <div class="metric-copy">Markdown 与 YAML 文本累计行数</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-number">10+</div>
+          <div class="metric-label">Core Modules</div>
+          <div class="metric-copy">agents / commands / config / docs / posters / references / scripts / tests 等核心结构协同演进</div>
+        </div>
+      </div>
+      <div class="split-band">
+        <div class="mini-panel">
+          <h3>Project Structure</h3>
+          <p>agents / commands / config / docs / examples / posters / references / scripts / static / tests</p>
+        </div>
+        <div class="mini-panel">
+          <h3>What It Proves</h3>
+          <p>这不是临时拼接的 prompt，而是快速迭代堆出来的研究型工程资产</p>
+        </div>
+      </div>
+      <div class="quote-block">
+        这不是“做过一些功能”的量级，而是 5.65 亿 Token、151 个脚本文件、近 2.5 万行代码和上万行文本共同堆出来的巨大工作量
+        <br /><br />
+        先看工作量，再谈这个 skill 为什么能跑这么深
+      </div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
+    </section>
+
+    <section class="screen tone-gold" data-screen="02">
+      <div class="section-kicker">Screen 3 · Research Reality</div>
+      <h2 class="section-title">真实研究现场，很少有人从 Step 1 整齐开始</h2>
       <div class="pain-grid">
         <article class="card soft-gold">
           <div class="card-index">Case 01</div>
-          <h3 class="card-title">明明已经有了大纲，却还要被迫重新做选题。</h3>
-          <p class="card-copy">已有研究边界被重复确认，时间浪费在不必要的回退上。</p>
+          <h3 class="card-title">有人已经有了大纲</h3>
+          <p class="card-copy">研究边界已经成形，需要的是继续推进，而不是重复起步</p>
         </article>
         <article class="card soft-blue">
           <div class="card-index">Case 02</div>
-          <h3 class="card-title">明明已经有了 BibTeX、PDF、Zotero 文库，却还要从头重跑流程。</h3>
-          <p class="card-copy">已有材料没有被识别，系统只会沿着预设顺序推进。</p>
+          <h3 class="card-title">有人已经有了 BibTeX 和 PDF</h3>
+          <p class="card-copy">材料已经到手，真正需要的是识别输入并继续进入后续步骤</p>
         </article>
         <article class="card soft-sage">
           <div class="card-index">Case 03</div>
-          <h3 class="card-title">明明只想续写一章、润色一节，系统却总想接管整篇论文。</h3>
-          <p class="card-copy">任务粒度不匹配，研究者只想推进局部，工作流却强行全局展开。</p>
+          <h3 class="card-title">有人带着 Zotero 文库和已有草稿进场</h3>
+          <p class="card-copy">任务并不是从零开始，而是希望在现有状态上继续写、继续修、继续补证据</p>
         </article>
       </div>
+      <div class="section-callout">More Paper Workflow Pro Skill 要解决的，正是中途接入、按材路由、继续推进</div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 3 · Core Claim</div>
-      <h2 class="section-title">它不是把论文拆成 8 步，而是把线性流程改造成动态路由。</h2>
-      <p class="section-intro">
-        这套 skill 不先问“你现在应该跑到第几步”，而是先判断你手上已经具备什么材料、
-        这些材料来自哪一步、它们足以支撑你走到哪里，以及哪里必须补充证据或提示风险。
-      </p>
+    <section class="screen tone-blue" data-screen="03">
+      <div class="section-kicker">Screen 4 · Core Claim</div>
+      <h2 class="section-title">它不是把论文拆成 8 步，而是把线性流程改造成动态路由</h2>
+      <p class="section-intro">先看材料，再定入口，再标风险</p>
       <div class="bullet-list">
         <div class="bullet"><span class="dot">1</span><span>你手上已经有什么材料</span></div>
         <div class="bullet"><span class="dot">2</span><span>这些材料来自哪一步</span></div>
@@ -549,12 +778,13 @@
         <div class="bullet"><span class="dot">4</span><span>哪里可以继续推进</span></div>
         <div class="bullet"><span class="dot">5</span><span>哪里必须提示风险</span></div>
       </div>
-      <div class="section-callout">不是强迫你从头开始，而是识别你现在最适合从哪里开始。</div>
+      <div class="section-callout">不是强迫你从头开始，而是识别你现在最适合从哪里开始</div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 4 · 8-Step Map</div>
-      <h2 class="section-title">表面上，它依然覆盖完整 8 步，但这 8 步是能力地图，不是流水线。</h2>
+    <section class="screen tone-gold" data-screen="04">
+      <div class="section-kicker">Screen 5 · 8-Step Map</div>
+      <h2 class="section-title">表面上，它依然覆盖完整 8 步，但这 8 步是能力地图，不是流水线</h2>
       <div class="steps-grid">
         <div class="step-item"><strong>Step 1</strong><span>研究主题澄清</span></div>
         <div class="step-item"><strong>Step 2</strong><span>大纲与关键词生成</span></div>
@@ -565,12 +795,13 @@
         <div class="step-item"><strong>Step 7</strong><span>写作与写作前证据组织</span></div>
         <div class="step-item"><strong>Step 8</strong><span>润色与保守修订</span></div>
       </div>
-      <div class="quote-block">完整覆盖不等于线性锁死。它能全流程工作，也允许任一步直接进入。</div>
+      <div class="quote-block">完整覆盖不等于线性锁死 它能全流程工作，也允许任一步直接进入</div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 5 · Core Architecture</div>
-      <h2 class="section-title">真正驱动它的，不是步骤编号，而是三层底层结构。</h2>
+    <section class="screen tone-sage" data-screen="05">
+      <div class="section-kicker">Screen 6 · Core Architecture</div>
+      <h2 class="section-title">真正驱动它的，不是步骤编号，而是三层底层结构</h2>
       <div class="triad-grid">
         <article class="card soft-blue">
           <div class="card-index">Layer 01</div>
@@ -588,14 +819,15 @@
           <p class="card-copy">能直接进入就直接进入，证据不足就标风险，只有真正高风险时才阻断。</p>
         </article>
       </div>
-      <div class="section-callout">它不是流程控制器，而是一套材料识别、状态判断和风险可视化系统。</div>
+      <div class="section-callout">它不是流程控制器，而是一套材料识别、状态判断和风险可视化系统</div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 6 · Artifact Passport</div>
-      <h2 class="section-title">Artifact Passport，是这套系统的材料护照。</h2>
+    <section class="screen tone-blue" data-screen="06">
+      <div class="section-kicker">Screen 7 · Artifact Passport</div>
+      <h2 class="section-title">Artifact Passport，是这套系统的材料护照</h2>
       <p class="section-intro">
-        它不保存正文内容，只记录你当前有哪些材料、这些材料分别属于哪个步骤，以及它们足以支撑你进入哪些后续步骤。
+        它不保存正文内容，只记录你当前有哪些材料、这些材料分别属于哪个步骤，以及它们足以支撑你进入哪些后续步骤
       </p>
       <div class="artifact-grid">
         <div class="artifact-item"><span class="code-tag">topic</span><span>研究主题</span></div>
@@ -609,12 +841,22 @@
         <div class="artifact-item"><span class="code-tag">draft</span><span>已有正文草稿</span></div>
         <div class="artifact-item"><span class="code-tag">citation_audit</span><span>引用审计结果</span></div>
       </div>
-      <div class="quote-block">它关心的不是你走到第几步，而是你现在手里到底有什么。</div>
+      <div class="split-band">
+        <div class="mini-panel">
+          <h3>Passport Logic</h3>
+          <p>先识别材料，再判断入口，再标记风险，不拿固定顺序替代研究状态</p>
+        </div>
+        <div class="mini-panel">
+          <h3>Core View</h3>
+          <p>它关心的不是你走到第几步，而是你现在手里到底有什么</p>
+        </div>
+      </div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 7 · Dynamic Routing</div>
-      <h2 class="section-title">下一步不是按编号决定，而是按材料成熟度决定。</h2>
+    <section class="screen tone-gold" data-screen="07">
+      <div class="section-kicker">Screen 8 · Dynamic Routing</div>
+      <h2 class="section-title">下一步不是按编号决定，而是按材料成熟度决定</h2>
       <div class="route-grid">
         <div class="route-item">
           <strong>有 <code>draft</code> 或 <code>polishing</code></strong>
@@ -647,77 +889,50 @@
           <span class="route-arrow">→ Step 1</span>
         </div>
       </div>
-      <div class="section-callout">真实研究从来不是整齐开始的，而是中途接入、反复回跳、边做边补。</div>
+      <div class="section-callout">真实研究从来不是整齐开始的，而是中途接入、反复回跳、边做边补</div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 8 · Step 7 Writing Router</div>
-      <h2 class="section-title">Step 7 不是一个“开始写论文”按钮，而是写作任务的分流入口。</h2>
+    <section class="screen tone-sage" data-screen="08">
+      <div class="section-kicker">Screen 9 · Writing & Revision</div>
+      <h2 class="section-title">Step 7 和 Step 8 组成后期写作系统 一边分流写作，一边约束修订</h2>
       <p class="section-intro">
-        它根据任务类型、草稿状态、证据基础和目标体裁切换写作模式，避免把所有写作请求都粗暴地视为“全文代写”。
+        这两步不只是顺序中的后半段，而是这套 skill 最关键的后期能力
+        前者负责按任务类型、草稿状态和目标体裁切换写作入口
+        后者负责在既有成稿基础上做受约束的保守修订
       </p>
+      <div class="split-band">
+        <div class="mini-panel">
+          <h3>Step 7 · Writing Router</h3>
+          <p>不是一个“开始写论文”按钮，而是写作任务的分流入口</p>
+        </div>
+        <div class="mini-panel">
+          <h3>Step 8 · Conservative Revision</h3>
+          <p>负责精修，但不冒充重写，也不替代证据审计</p>
+        </div>
+      </div>
       <div class="mode-grid">
         <div class="mode-item"><span class="code-tag">full-document</span><span>全文写作</span></div>
         <div class="mode-item"><span class="code-tag">chapter-only</span><span>章节写作</span></div>
         <div class="mode-item"><span class="code-tag">continue-existing</span><span>基于已有草稿续写</span></div>
-        <div class="mode-item"><span class="code-tag">abstract-only</span><span>只写摘要</span></div>
-        <div class="mode-item"><span class="code-tag">review-only</span><span>文献综述</span></div>
-        <div class="mode-item"><span class="code-tag">revision-only</span><span>基于审稿意见定向修订</span></div>
+        <div class="mode-item"><span class="code-tag">review-only</span><span>文献综述 / 定向修订</span></div>
+        <div class="mode-item"><span class="code-tag">local-polish</span><span>局部润色</span></div>
+        <div class="mode-item"><span class="code-tag">full-manuscript-pass</span><span>全稿保守精修</span></div>
       </div>
-      <div class="genre-grid">
-        <div class="genre-item"><span class="code-tag">thesis</span><span>学位论文</span></div>
-        <div class="genre-item"><span class="code-tag">journal</span><span>期刊论文</span></div>
-        <div class="genre-item"><span class="code-tag">review</span><span>综述</span></div>
-        <div class="genre-item"><span class="code-tag">report</span><span>报告</span></div>
-        <div class="genre-item"><span class="code-tag">proposal</span><span>开题 / 方案</span></div>
-        <div class="genre-item"><span class="code-tag">conference</span><span>会议论文</span></div>
+      <div class="split-band">
+        <div class="mini-panel">
+          <h3>Writing Dimensions</h3>
+          <p>按草稿状态、证据基础、目标体裁决定怎么写，而不是盲目代写</p>
+        </div>
+        <div class="mini-panel">
+          <h3>Revision Boundaries</h3>
+          <p>强调结构保留、局部补写、问题回退和修订台账，不假装已经完成引用确认</p>
+        </div>
       </div>
-      <div class="quote-block">它不是盲目代写，而是根据草稿状态、证据基础和目标体裁决定怎么写。</div>
+      <div class="quote-block">写作不是一键展开 修订也不是无限重写 这套后期系统强调入口分流与边界控制</div>
+      <div class="screen-footer">GitHub · github.com/bingyunjiang/More-paper-workflow-pro-skill</div>
     </section>
 
-    <section class="screen">
-      <div class="section-kicker">Screen 9 · Step 8 Conservative Revision</div>
-      <h2 class="section-title">Step 8 负责精修，但不冒充重写，也不替代证据审计。</h2>
-      <div class="scope-grid">
-        <div class="scope-item"><span class="code-tag">local-polish</span><span>局部润色</span></div>
-        <div class="scope-item"><span class="code-tag">section-revision</span><span>章节修订</span></div>
-        <div class="scope-item"><span class="code-tag">full-manuscript-pass</span><span>全稿一轮保守精修</span></div>
-      </div>
-      <div class="bullet-list">
-        <div class="bullet"><span class="dot">A</span><span>保留了哪些原结构</span></div>
-        <div class="bullet"><span class="dot">B</span><span>哪些修改属于直接修订</span></div>
-        <div class="bullet"><span class="dot">C</span><span>哪些修改属于局部补写</span></div>
-        <div class="bullet"><span class="dot">D</span><span>哪些问题必须回到 Step 7 解决</span></div>
-        <div class="bullet"><span class="dot">E</span><span>是否形成完整的修订记录与验证台账</span></div>
-      </div>
-      <div class="section-callout">它负责精修，但不接管主体写作，也不假装已经完成引用确认。</div>
-    </section>
-
-    <section class="screen">
-      <div class="section-kicker">Screen 10 · Methodology</div>
-      <h2 class="section-title">这不是一个从 1 做到 8 的论文助手，而更像一个研究操作系统。</h2>
-      <p class="section-intro">
-        它识别你已有的材料，判断你能从哪里进入，告诉你哪里可以继续推进，也明确哪里不能假装已经完成。
-        它把论文工作流，从“顺序执行”变成“材料驱动、证据驱动、风险可审计”的动态系统。
-      </p>
-      <div class="pill-cloud">
-        <span class="pill">Material-Driven</span>
-        <span class="pill">Evidence-Aware</span>
-        <span class="pill">Risk-Visible</span>
-        <span class="pill">Direct Entry</span>
-        <span class="pill">Audit-Friendly</span>
-      </div>
-    </section>
-
-    <section class="screen footer-screen">
-      <div class="section-kicker">Final Message</div>
-      <h2 class="section-title">AI 赋能科研，帮你在真实研究状态里高效前进</h2>
-      <p class="section-intro">
-        不是替你机械跑流程，而是让流程服务真实研究推进。<br />
-        More Paper Workflow Pro Skill
-      </p>
-      <div class="footer-badge">Ready for Full-Page Screenshot Export</div>
-    </section>
   </main>
 </body>
 </html>

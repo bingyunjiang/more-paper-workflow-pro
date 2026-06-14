@@ -68,6 +68,8 @@ except ImportError:  # Allow standalone execution from unusual working dirs.
 CACHE_DIR = os.path.expanduser("~/.cache/more-paper-workflow/search_cache")
 CACHE_TTL_SECONDS = 7 * 24 * 3600  # 7 days
 CACHE_MAX_ENTRIES = 500
+SEMANTIC_SCHOLAR_ANON_MIN_INTERVAL = 1.2
+_semantic_scholar_last_request_ts = 0.0
 
 # ── Wanfang Web Search ──────────────────────────────────────────────────
 
@@ -175,6 +177,27 @@ def _cache_set(key, data):
     os.replace(tmp, os.path.join(CACHE_DIR, key + ".json"))
 
 
+def _throttle_semantic_scholar_if_anonymous(api_key):
+    """Throttle anonymous Semantic Scholar requests before hitting the API.
+
+    Semantic Scholar's unauthenticated quota is easy to trip during repeated
+    interactive searches. When no API key is configured, enforce a minimum
+    spacing between requests. Authenticated callers keep the current behavior.
+    """
+    if api_key:
+        return
+
+    global _semantic_scholar_last_request_ts
+    now = time.time()
+    elapsed = now - _semantic_scholar_last_request_ts
+    wait = SEMANTIC_SCHOLAR_ANON_MIN_INTERVAL - elapsed
+    if wait > 0:
+        print(f"  Semantic Scholar: anonymous throttle, waiting {wait:.1f}s...", flush=True)
+        time.sleep(wait)
+        now = time.time()
+    _semantic_scholar_last_request_ts = now
+
+
 # ── Abstract Utilities ─────────────────────────────────────────────────────
 
 # Method detection keywords for abstract-based scoring
@@ -236,6 +259,7 @@ def search_semantic_scholar(query, limit=20, use_cache=True):
     rate_limited = False
     for attempt in range(4):
         try:
+            _throttle_semantic_scholar_if_anonymous(api_key)
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 if resp.status == 429:
